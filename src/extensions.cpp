@@ -30,6 +30,9 @@ namespace apexmatch {
 PipelineReport replay_pipeline(std::istream& input, std::ostream& output,
                               std::size_t capacity, std::size_t depth) {
     BoundedQueue<std::string> queue(capacity);
+    // Finish consumer construction before starting a producer that can block.
+    // An initialization exception must not join a producer waiting on a full queue.
+    MatchingEngine engine;
     std::exception_ptr producer_error;
     std::jthread producer([&] {
         try {
@@ -50,7 +53,6 @@ PipelineReport replay_pipeline(std::istream& input, std::ostream& output,
         queue.close();
     });
     PipelineReport report;
-    MatchingEngine engine;
     try {
         while (auto line = queue.pop()) {
             output << process_line(engine, *line, depth);
@@ -439,30 +441,47 @@ void run_local_client(std::uint16_t port, std::istream& commands, std::ostream& 
 #else
     timeval timeout{}; timeout.tv_sec = 5;
 #endif
-    setsockopt(connection.value, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
-    setsockopt(connection.value, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout));
+    if (setsockopt(connection.value, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)) ||
+        setsockopt(connection.value, SOL_SOCKET, SO_SNDTIMEO, reinterpret_cast<const char*>(&timeout), sizeof(timeout)))
+        throw std::runtime_error("client socket timeout configuration failed");
     const auto address = localhost(port);
     if (connect(connection.value, reinterpret_cast<const sockaddr*>(&address), sizeof(address)))
         throw std::runtime_error("localhost connect failed");
     std::string pending;
+    constexpr std::size_t response_limit = 1024 * 1024;
     const auto read_line = [&]() {
         while (true) {
             const auto end = pending.find('\n');
             if (end != std::string::npos) {
+                if (end > response_limit) throw std::runtime_error("server response line exceeds 1 MiB");
                 auto line = pending.substr(0, end); pending.erase(0, end + 1); return line;
             }
-            if (pending.size() > 1024 * 1024) throw std::runtime_error("server response line exceeds 1 MiB");
+            if (pending.size() > response_limit) throw std::runtime_error("server response line exceeds 1 MiB");
             std::array<char, 4096> buffer{};
-            const int count = receive(connection.value, buffer.data(), static_cast<int>(buffer.size()));
+            // One extra byte distinguishes an exact-limit newline from excess
+            // payload without ever retaining an unbounded response fragment.
+            const auto available = std::min(buffer.size(), response_limit - pending.size() + 1);
+            const int count = receive(connection.value, buffer.data(), static_cast<int>(available));
             if (count > 0) pending.append(buffer.data(), static_cast<std::size_t>(count));
             else if (count < 0 && interrupted(socket_error())) continue;
             else throw std::runtime_error(count == 0 ? "server closed before response completed" : "server receive failed or timed out");
         }
     };
     responses << read_line() << '\n'; // HELLO is framed independently of commands.
+    if (!responses) throw std::runtime_error("client response output failed");
     std::string command;
-    while (std::getline(commands, command)) {
-        if (command.size() > 4096) throw std::runtime_error("client command exceeds 4096 bytes");
+    const auto read_command = [&]() {
+        command.clear();
+        char character{};
+        while (commands.get(character)) {
+            if (character == '\n') return true;
+            if (command.size() == 4096) throw std::runtime_error("client command exceeds 4096 bytes");
+            command.push_back(character);
+        }
+        if (commands.bad()) throw std::runtime_error("client command input failed");
+        return !command.empty();
+    };
+    while (read_command()) {
         command += '\n';
         std::size_t offset{};
         while (offset < command.size()) {

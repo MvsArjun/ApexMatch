@@ -282,6 +282,87 @@ def large_response_test(server, client):
             process.wait(timeout=5)
 
 
+def client_bounds_test(client):
+    """Check the delivered client's bounds against a controlled local peer."""
+    limit = 1024 * 1024
+
+    def fake_server(response=None):
+        listener = socket.socket()
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(1)
+        listener.settimeout(10)
+        errors = []
+
+        def serve():
+            try:
+                with listener:
+                    connection, _ = listener.accept()
+                    with connection:
+                        connection.settimeout(10)
+                        connection.sendall(b'{"type":"HELLO"}\n')
+                        pending = b""
+                        while b"\n" not in pending:
+                            data = connection.recv(4096)
+                            if not data:
+                                return
+                            pending += data
+                        if response is not None:
+                            connection.sendall(response + b'\n{"type":"RESPONSE_END","command_sequence":1}\n')
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # Rejection is expected to close the client connection.
+            except BaseException as error:
+                errors.append(error)
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        return listener.getsockname()[1], thread, errors
+
+    prefix, suffix = b'{"type":"NOTICE","padding":"', b'"}'
+    for size in (limit, limit + 1):
+        response = prefix + b"x" * (size - len(prefix) - len(suffix)) + suffix
+        port, thread, errors = fake_server(response)
+        completed = subprocess.run([client, "--port", str(port)], input="BOOK\n",
+                                   capture_output=True, text=True, timeout=15)
+        thread.join(timeout=12)
+        assert not thread.is_alive() and not errors, errors
+        if size == limit:
+            assert completed.returncode == 0, completed.stderr
+            assert len(completed.stdout.splitlines()[1].encode()) == limit
+        else:
+            assert completed.returncode != 0, "client accepted a framed response over 1 MiB"
+            assert "exceeds 1 MiB" in completed.stderr, completed.stderr
+
+    # Exact-limit command data at finite EOF still forms one network request.
+    port, thread, errors = fake_server(b'{"type":"NOTICE"}')
+    completed = subprocess.run([client, "--port", str(port)], input="X" * 4096,
+                               capture_output=True, text=True, timeout=15)
+    thread.join(timeout=12)
+    assert not thread.is_alive() and not errors, errors
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout.splitlines()[-1])["command_sequence"] == 1
+
+    # Leave stdin open after the 4097th byte: rejection must not wait for EOF
+    # or retain the remainder of an arbitrarily long command line.
+    port, thread, errors = fake_server()
+    process = subprocess.Popen([client, "--port", str(port)], stdin=subprocess.PIPE,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        process.stdin.write("X" * 4097)
+        process.stdin.flush()
+        try:
+            code = process.wait(timeout=5)
+        except subprocess.TimeoutExpired as error:
+            raise AssertionError("oversized client command waited for newline/EOF") from error
+        assert code != 0 and "exceeds 4096 bytes" in process.stderr.read()
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+        process.stdin.close()
+        thread.join(timeout=12)
+    assert not thread.is_alive() and not errors, errors
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", required=True)
@@ -290,5 +371,6 @@ if __name__ == "__main__":
     regular_tests(args.server, args.client)
     bounds_tests(args.server)
     large_response_test(args.server, args.client)
+    client_bounds_test(args.client)
     signal_test(args.server)
     print("network integration checks passed")

@@ -56,6 +56,19 @@ void queue_tests() {
     while (auto value = multiple.pop()) seen.insert(*value);
     closer.join();
     require(seen.size() == 2 * each && multiple.high_water() <= 13, "multi-producer queue loss/duplication");
+
+    BoundedQueue<std::size_t> shared(3);
+    std::array<std::vector<std::size_t>, 2> consumed;
+    std::jthread consumer_a([&] { while (auto value = shared.pop()) consumed[0].push_back(*value); });
+    std::jthread consumer_b([&] { while (auto value = shared.pop()) consumed[1].push_back(*value); });
+    std::jthread writer_a([&] { for (std::size_t i = 0; i < each; ++i) shared.push(i); });
+    std::jthread writer_b([&] { for (std::size_t i = 0; i < each; ++i) shared.push(each + i); });
+    writer_a.join(); writer_b.join(); shared.close();
+    consumer_a.join(); consumer_b.join();
+    seen.clear();
+    for (const auto& batch : consumed) for (const auto value : batch)
+        require(seen.insert(value).second, "multi-consumer queue duplicated a value");
+    require(seen.size() == 2 * each && shared.high_water() <= 3, "multi-consumer queue lost a value");
 }
 void pipeline_tests() {
     const std::string source = "# fixture\nADD 1 BUY 100 9\nADD 2 SELL 99 3\nCANCEL 1\nADD x BUY 100 2\nBOOK\nSTATS\n";
@@ -80,7 +93,7 @@ void pipeline_tests() {
     const auto expected_oversized = process_line(oversized, huge_line) + process_line(oversized, "BOOK");
     require(replay_pipeline(huge_input, huge_output, 1).lines == 2 && huge_output.str() == expected_oversized,
             "pipeline oversized-line discard changed replay semantics");
-    std::istringstream bad_input("ADD 1 BUY 100 1\n");
+    std::istringstream bad_input(std::string(10000, '\n'));
     std::ostringstream failed_output;
     failed_output.setstate(std::ios::badbit);
     rejects([&] { replay_pipeline(bad_input, failed_output, 1); });
@@ -89,6 +102,17 @@ void pipeline_tests() {
     throwing_input.setstate(std::ios::eofbit);
     std::ostringstream normal_output;
     require(replay_pipeline(throwing_input, normal_output).lines == 0, "EOF should drain cleanly");
+
+    struct FailingInput : std::stringbuf {
+        FailingInput() : std::stringbuf("ADD 1 BUY 100 1\n") {}
+        int_type underflow() override { throw std::runtime_error("injected input failure"); }
+    } source_buffer;
+    std::istream failed_input(&source_buffer);
+    std::ostringstream drained_output;
+    rejects([&] { replay_pipeline(failed_input, drained_output, 1); });
+    MatchingEngine completed;
+    require(drained_output.str() == process_line(completed, "ADD 1 BUY 100 1"),
+            "producer input failure did not drain queued commands before propagating");
 }
 void market_data_tests() {
     MatchingEngine engine;
@@ -148,6 +172,12 @@ void twap_tests() {
     MatchingEngine cancelled;
     const auto external_cancel = simulate_twap(cancelled, single, {{50, "CANCEL 100"}});
     require(external_cancel.cancelled_quantity == 1 && external_cancel.unfilled_quantity == 1, "external child cancellation report wrong");
+    TwapConfig tied{2, 2, 10, 10, Side::Buy, 100, 1000};
+    MatchingEngine ties;
+    const auto simultaneous = simulate_twap(ties, tied, {{10, "ADD 1 SELL 100 1"},
+        {10, "CANCEL 1"}, {10, "ADD 2 SELL 100 1"}});
+    require(simultaneous.executed_quantity == 1 && simultaneous.cancelled_quantity == 1,
+            "TWAP equal-time external ordering or zero-duration schedule changed");
     MatchingEngine conflicts;
     conflicts.add(1000, Side::Buy, 90, 1);
     TwapConfig collision{2, 2, 0, 10, Side::Buy, 100, 1000};
@@ -163,6 +193,14 @@ void twap_tests() {
     const auto huge = twap_schedule(extreme);
     require(huge.front().time == 0 && huge.back().time == extreme.end, "TWAP large time overflow");
     require(huge[0].quantity + huge[1].quantity + huge[2].quantity == extreme.quantity, "TWAP large quantity overflow");
+    TwapConfig maximum{std::numeric_limits<Quantity>::max(), 1, 0,
+        std::numeric_limits<SimulationTime>::max(), Side::Buy, 1, std::numeric_limits<OrderId>::max()};
+    MatchingEngine boundary;
+    const auto maximal = simulate_twap(boundary, maximum);
+    require(maximal.submitted_quantity == maximum.quantity && maximal.accepted_quantity == maximum.quantity &&
+            maximal.executed_quantity == 0 && maximal.cancelled_quantity == maximum.quantity &&
+            maximal.unfilled_quantity == maximum.quantity && boundary.book().active_orders() == 0,
+            "TWAP maximal quantity/ID/time accounting overflowed");
     MatchingEngine invalid_market;
     rejects([&] { simulate_twap(invalid_market, config, {{101, "ADD 1 SELL 100 1"}}); });
     rejects([&] { simulate_twap(invalid_market, config, {{0, "nonsense"}}); });
