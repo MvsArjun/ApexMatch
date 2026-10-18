@@ -9,7 +9,6 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
-#include <new>
 #include <numeric>
 #include <stdexcept>
 #include <string>
@@ -121,8 +120,10 @@ Batch batch(const std::vector<Request>& requests, AllocationMode mode) {
     const auto start = Clock::now();
     for (const auto& request : requests) { const auto result = apply(engine, request); emitted += result.events.size(); }
     const auto end = Clock::now();
+    const auto elapsed = std::chrono::duration_cast<Nanoseconds>(end - start).count();
+    if (elapsed <= 0) throw std::runtime_error("batch too short for clock resolution; increase --size");
     engine.check_invariants();
-    return {std::chrono::duration_cast<Nanoseconds>(end - start).count(), outcome(engine, emitted)};
+    return {elapsed, outcome(engine, emitted)};
 }
 struct Latency { double mean{}; std::int64_t p50{}, p95{}, p99{}; Outcome state; };
 Latency latencies(const std::vector<Request>& requests, AllocationMode mode) {
@@ -196,6 +197,7 @@ Config arguments(int argc, char** argv) {
     if (c.size == 0 || c.size > 100000000 || c.repeats == 0) throw std::runtime_error("size must be 1..100000000 and repeats must be positive");
     if (c.mode != "baseline" && c.mode != "pool" && c.mode != "both") throw std::runtime_error("mode must be baseline, pool, or both");
     if (c.format != "json" && c.format != "csv") throw std::runtime_error("format must be json or csv");
+    if (c.profile_only && c.format != "json") throw std::runtime_error("profile-only output requires json format");
     if (c.workload != "all" && std::find(workload_names.begin(), workload_names.end(), c.workload) == workload_names.end()) throw std::runtime_error("unknown workload");
     return c;
 }
