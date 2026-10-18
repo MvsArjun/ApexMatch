@@ -31,6 +31,7 @@ project reference files were left in place. WSL reports that it is not installed
 | ASan + UBSan, expanded large-response TCP check | Passed after adding a 600-maker sweep through the delivered client, exercising multiple server writes and client reads. [Log](../results/verification/asan-network-large-response.log). |
 | Clean Git clone release configure/build/test | Passed all four groups in a new local clone, without using untracked source files or prior build products. [Log](../results/verification/clean-checkout-release.log). |
 | Deterministic replay | Repeated file/stdin replay, golden output and pool/default equivalence all passed. |
+| Workload-generator replay | Generated and replayed 10,000 requests with per-request invariant checking; 6,216 executions, no invariant failure. |
 | Bounded pipeline | Sequential equivalence, finite capacity, FIFO, 50,000 ordered queue items, two producers, shutdown/draining, error propagation and oversized-line recovery passed. |
 | Market data | Delivered JSON incrementals reconstructed against snapshots and BOOK; partial fills, multiple levels, removals and top quotes passed. |
 | Local TCP | Fragmented/coalesced input, malformed messages, line limits, half-close, abrupt close, bundled client, output bound and explicit draining shutdown passed. Native forced termination does not test POSIX SIGTERM. |
