@@ -30,6 +30,7 @@ their JUnit and failure logs as well.
 | Clang Debug | 6 passed, 0 failed | [result](../results/audit-verification/clang-debug/result.json), [details](../results/audit-verification/clang-debug/test-details.log) |
 | Clang Release | 6 passed, 0 failed | [result](../results/audit-verification/clang-release/result.json), [details](../results/audit-verification/clang-release/test-details.log) |
 | Clang Debug ASan + UBSan | 6 passed, 0 failed | [result](../results/audit-verification/clang-asan/result.json), [details](../results/audit-verification/clang-asan/test-details.log) |
+| Final clean Git clone, Clang Release | 6 passed, 0 failed | [result](../results/audit-verification/clean-clone/result.json), [details](../results/audit-verification/clean-clone/test-details.log) |
 | GCC Debug | 5 passed, 1 failed (`core_and_extensions`, SIGSEGV) | [result](../results/audit-verification/gcc-debug/result.json), [test output](../results/audit-verification/gcc-debug/test.log) |
 | GCC Release | 5 passed, 1 failed (`core_and_extensions`, SIGSEGV) | [result](../results/audit-verification/gcc-release/result.json), [test output](../results/audit-verification/gcc-release/test.log) |
 
@@ -53,6 +54,18 @@ The initial repository at `bf0e409` was also archived into an independent source
 directory, freshly configured/built, and passed its original four CTest groups
 before audit changes. Historical delivery evidence (26 named cases) remains in
 [results/verification](../results/verification). Current coverage is broader.
+The final clean clone at `7b47fb7` passed all six groups, 29 named C++ cases and
+13 tooling cases using only committed source; subsequent edits are documentation
+and evidence updates. The clone's verification record includes source hashes,
+clean Git status and the actual compiler/version/commands.
+
+The audited Release benchmark completed 108 observations at clean source
+revision `40ead65`. At one-million noncrossing requests, median throughput was
+1.833M requests/s baseline and 3.074M pooled, p99 800/700 ns, and peak requested
+book memory 147.34/199.41 MiB. The full [current matrix](../results/audit-native-clang23/summary.md)
+and [methodology](performance.md) preserve repeat ranges and limits alongside
+the original historical run. These are normal-allocation Clang measurements,
+not evidence that the failed GCC resource-exhaustion test passed.
 
 ## Reproduced GCC dependency failure
 

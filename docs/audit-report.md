@@ -100,11 +100,14 @@ Linux builds were not executed and are not inferred from workflow syntax.
 | Clang ASan/UBSan | 6 / 0 | 29 passed | 13 passed |
 | GCC Debug | 5 / 1 | Aborted in pool failure injection; no full pass | 13 passed |
 | GCC Release | 5 / 1 | Aborted in pool failure injection; no full pass | 13 passed |
+| Final clean clone, Clang Release | 6 / 0 | 29 passed | 13 passed |
 
 Each complete C++ run includes 40,000 fixed-seed differential requests in both
 allocation modes. Those requests are not additional separately named cases.
 GCC's five other passing groups include replay/network/program checks as well
 as tooling; they do not erase its failure. [Verification and logs](verification.md).
+The final clone used committed revision `7b47fb7` and no prior build products.
+It passed the expanded release-scanner assertions and the complete current suite.
 
 ## 7. Sanitizer results
 
