@@ -1,0 +1,26 @@
+name: build-and-verify
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++, clang++]
+        preset: [debug, release, asan]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build g++ clang python3
+      - run: cmake --preset ${{ matrix.preset }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+      - run: cmake --build --preset ${{ matrix.preset }} --parallel 2
+      - run: ctest --preset ${{ matrix.preset }}
+  thread-sanitizer:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y cmake ninja-build clang python3
+      # Hosted kernels with high mmap randomization can collide with TSan's shadow.
+      - run: sudo sysctl vm.mmap_rnd_bits=28
+      - run: cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++
+      - run: cmake --build --preset tsan --parallel 2
+      - run: ctest --preset tsan

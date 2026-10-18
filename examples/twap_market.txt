@@ -1,0 +1,4 @@
+# Deterministic simulation time followed by a normal order-entry command.
+0 ADD 1 SELL 100 8
+55 ADD 2 SELL 101 5
+80 ADD 3 SELL 102 20

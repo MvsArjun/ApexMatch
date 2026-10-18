@@ -1,0 +1,17 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {"major": 3, "minor": 21, "patch": 0},
+  "configurePresets": [
+    {"name": "debug", "generator": "Ninja", "binaryDir": "${sourceDir}/build/debug", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug"}},
+    {"name": "release", "inherits": "debug", "binaryDir": "${sourceDir}/build/release", "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}},
+    {"name": "asan", "inherits": "debug", "binaryDir": "${sourceDir}/build/asan", "cacheVariables": {"APEX_SANITIZERS": "ON", "APEX_BUILD_BENCHMARKS": "OFF"}},
+    {"name": "tsan", "inherits": "debug", "binaryDir": "${sourceDir}/build/tsan", "cacheVariables": {"APEX_TSAN": "ON", "APEX_BUILD_BENCHMARKS": "OFF"}}
+  ],
+  "buildPresets": [{"name": "debug", "configurePreset": "debug"}, {"name": "release", "configurePreset": "release"}, {"name": "asan", "configurePreset": "asan"}, {"name": "tsan", "configurePreset": "tsan"}],
+  "testPresets": [
+    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}},
+    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}},
+    {"name": "asan", "configurePreset": "asan", "output": {"outputOnFailure": true}, "environment": {"ASAN_OPTIONS": "detect_leaks=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"}},
+    {"name": "tsan", "configurePreset": "tsan", "output": {"outputOnFailure": true}, "environment": {"TSAN_OPTIONS": "halt_on_error=1"}}
+  ]
+}
