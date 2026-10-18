@@ -5,15 +5,19 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime as dt
+import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import platform
+import re
 import statistics
 import subprocess
 import sys
 
 WORKLOADS = ["noncrossing", "immediate", "cancellation_bursts", "shared_level", "large_book", "asymmetric"]
+REPORT_FILES = {"metadata.json", "raw.jsonl", "raw.csv", "results.json", "summary.csv", "summary.md"}
 
 
 def command_output(command: list[str], cwd: Path | None = None) -> str:
@@ -33,7 +37,7 @@ def cache_metadata(build: Path) -> dict[str, object]:
                 continue
             name, value = line.split("=", 1)
             key = name.split(":", 1)[0]
-            if key in {"CMAKE_CXX_COMPILER", "CMAKE_BUILD_TYPE", "CMAKE_GENERATOR"} or key.startswith("CMAKE_CXX_FLAGS") or key.startswith("APEX_"):
+            if not key.endswith("-ADVANCED") and (key in {"CMAKE_CXX_COMPILER", "CMAKE_BUILD_TYPE", "CMAKE_GENERATOR"} or key.startswith("CMAKE_CXX_FLAGS") or key.startswith("APEX_")):
                 selected[key] = value
     compiler = selected.get("CMAKE_CXX_COMPILER")
     if compiler:
@@ -44,7 +48,78 @@ def cache_metadata(build: Path) -> dict[str, object]:
     return selected
 
 
-def metadata(root: Path, build: Path, executable: Path, args: argparse.Namespace) -> dict:
+def verify_build(build_info: dict, allow_unverified: bool) -> str:
+    """Reject known Debug/instrumented runs; missing provenance needs an explicit override."""
+    build_type = build_info.get("CMAKE_BUILD_TYPE")
+    if build_type and build_type != "Release":
+        raise ValueError(f"performance matrix requires CMAKE_BUILD_TYPE=Release; found {build_type}")
+    if any(str(build_info.get(key, "OFF")).upper() not in {"", "OFF", "FALSE", "NO", "0"}
+           for key in ("APEX_SANITIZERS", "APEX_TSAN")):
+        raise ValueError("performance matrix requires sanitizers to be disabled")
+    command_rows = build_info.get("benchmark_compile_commands", [])
+    compile_text = " ".join(str(row.get("command", " ".join(row.get("arguments", [])))) for row in command_rows)
+    flags = " ".join(str(build_info.get(key, "")) for key in ("CMAKE_CXX_FLAGS", "CMAKE_CXX_FLAGS_RELEASE"))
+    if "-fsanitize" in flags + " " + compile_text:
+        raise ValueError("performance matrix requires compile commands without sanitizer instrumentation")
+    optimization_flags = re.findall(r"(?:^|\s)(-O(?:[0123sgz]|fast))(?=\s|$)", compile_text)
+    if optimization_flags and optimization_flags[-1] == "-O0":
+        raise ValueError("performance matrix requires optimization; the effective compile flag is -O0")
+    if build_type == "Release" and command_rows and optimization_flags and optimization_flags[-1] not in {"-O0", "-Og"}:
+        return "Release cache and optimized benchmark compile command inspected; executable/source correspondence requires a fresh build"
+    if not allow_unverified:
+        raise ValueError("missing Release/optimized compile-command provenance; use a fresh CMake Release build or explicitly pass --allow-unverified-build")
+    return "UNVERIFIED build provenance explicitly allowed by --allow-unverified-build"
+
+
+def prepare_output(output: Path) -> None:
+    existing = sorted(name for name in REPORT_FILES if (output / name).exists())
+    if existing:
+        raise ValueError("output already contains benchmark evidence; choose a new directory: " + ", ".join(existing))
+    output.mkdir(parents=True, exist_ok=True)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def portable_metadata(value: object, root: Path, build: Path, executable: Path, compiler: str | None) -> object:
+    """Retain flags and relative layout while removing host-specific absolute prefixes."""
+    prefixes = [(str(root), "${REPO}"), (str(build), "${BUILD}"), (str(Path.home()), "${HOME}")]
+    if compiler:
+        prefixes.append((str(Path(compiler).parent), "${TOOLCHAIN}"))
+    prefixes.append((str(executable), "${BENCHMARK}"))
+    replacements = []
+    for prefix, label in prefixes:
+        if prefix in {"", ".", "/", "\\"}:
+            continue
+        replacements.extend((variant, label) for variant in {prefix, prefix.replace("\\", "/"), prefix.replace("/", "\\")})
+    replacements.sort(key=lambda item: len(item[0]), reverse=True)
+
+    def sanitize(text: str) -> str:
+        for prefix, label in replacements:
+            text = re.sub(re.escape(prefix), lambda _: label, text, flags=re.IGNORECASE if os.name == "nt" else 0)
+        # Other absolute path tokens (for example a system include directory)
+        # keep their basename. URL paths are excluded by the preceding ':'/'/'.
+        pattern = r"(?:(?<![\w:/\\}])|(?<=-I)|(?<=-L)|(?<==))(?:[A-Za-z]:[/\\]|/)[^\s\"'<>|]+"
+        text = re.sub(pattern, lambda match: "${EXTERNAL}/" + re.split(r"[/\\]", match.group())[-1], text)
+        return text
+
+    def visit(item: object) -> object:
+        if isinstance(item, str):
+            return sanitize(item)
+        if isinstance(item, list):
+            return [visit(part) for part in item]
+        if isinstance(item, dict):
+            return {key: visit(part) for key, part in item.items()}
+        return item
+    return visit(value)
+
+
+def metadata(root: Path, build: Path, executable: Path, args: argparse.Namespace, build_info: dict, build_verification: str) -> dict:
     cpu = platform.processor() or os.environ.get("PROCESSOR_IDENTIFIER", "unavailable")
     physical_memory = None
     if os.name == "nt":
@@ -66,11 +141,17 @@ def metadata(root: Path, build: Path, executable: Path, args: argparse.Namespace
                 cpu = line.split(":", 1)[1].strip()
                 break
     affinity = sorted(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else None
-    return {
+    source_files = [root / "CMakeLists.txt", root / "CMakePresets.json"]
+    for directory in ("src", "include", "benchmarks", "tools"):
+        source_files.extend(path for path in (root / directory).rglob("*") if path.is_file() and path.suffix in {".cpp", ".hpp", ".py", ".sh"})
+    info = {
         "recorded_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
         "platform": platform.platform(), "os": platform.system(), "release": platform.release(),
         "machine": platform.machine(), "cpu": cpu, "logical_cpus": os.cpu_count(), "physical_memory_bytes": physical_memory, "cpu_affinity": affinity,
-        "python": platform.python_version(), "executable": str(executable), "build": cache_metadata(build),
+        "python": platform.python_version(), "executable": str(executable), "executable_sha256": sha256_file(executable), "build": build_info,
+        "compiler_basename": Path(build_info["CMAKE_CXX_COMPILER"]).name if build_info.get("CMAKE_CXX_COMPILER") else "unavailable",
+        "build_verification": build_verification,
+        "source_sha256": {path.relative_to(root).as_posix(): sha256_file(path) for path in sorted(source_files)},
         "git_revision": command_output(["git", "rev-parse", "HEAD"], root),
         "git_status": command_output(["git", "status", "--short"], root),
         "invocation": sys.argv, "seed": args.seed, "sizes": args.sizes,
@@ -78,7 +159,37 @@ def metadata(root: Path, build: Path, executable: Path, args: argparse.Namespace
         "mode_order": "alternated by workload/size; each mode uses a separate process",
         "timing_scope": "engine add/cancel plus returned event destruction; no parsing, IO, engine construction/destruction, invariant checks, or workload generation",
         "allocation_scope": "separate untimed pass counting book PMR upstream requests with sizes/alignments; excludes ordinary event vectors, pool object, and process RSS",
+        "path_policy": "absolute repository/build/toolchain/home prefixes are replaced by placeholders; other absolute path tokens retain only basename",
     }
+    return portable_metadata(info, root, build, executable, build_info.get("CMAKE_CXX_COMPILER"))
+
+
+def validate_observations(rows: list[dict], size: int, workload: str, mode: str, args: argparse.Namespace) -> None:
+    if len(rows) != args.repeats or sorted(row.get("repeat", -1) for row in rows) != list(range(args.repeats)):
+        raise ValueError("benchmark must emit each requested repeat exactly once")
+    counters = ("batch_ns", "timer_pair_median_ns", "allocations", "allocated_bytes_total", "peak_live_requested_bytes",
+                "retained_requested_bytes", "emitted_events", "executions", "accepted_adds", "active_orders")
+    metrics = ("requests_per_second", "latency_mean_ns", "latency_p50_ns", "latency_p95_ns", "latency_p99_ns")
+    for row in rows:
+        if row.get("schema_version") != 2:
+            raise ValueError("unsupported benchmark schema; rebuild the benchmark with current sources")
+        if tuple(row.get(key) for key in ("requests", "workload", "mode", "seed", "warmups")) != (size, workload, mode, args.seed, args.warmups):
+            raise ValueError("benchmark output does not match requested configuration")
+        if any(type(row.get(key)) is not int or row[key] < 0 for key in counters):
+            raise ValueError("benchmark counters must be nonnegative integers")
+        if any(not isinstance(row.get(key), (int, float)) or not math.isfinite(row[key]) or row[key] < 0 for key in metrics):
+            raise ValueError("benchmark metrics must be finite and nonnegative")
+        if row["batch_ns"] == 0 or not math.isclose(row["requests_per_second"], size * 1e9 / row["batch_ns"], rel_tol=1e-9):
+            raise ValueError("throughput is inconsistent with requests and batch duration")
+        if not row["latency_p50_ns"] <= row["latency_p95_ns"] <= row["latency_p99_ns"]:
+            raise ValueError("latency percentiles must be monotonically increasing")
+        if not row["retained_requested_bytes"] <= row["peak_live_requested_bytes"] <= row["allocated_bytes_total"]:
+            raise ValueError("requested-memory counters are inconsistent")
+        if row["active_orders"] > row["accepted_adds"] or row["accepted_adds"] > size:
+            raise ValueError("order counts are inconsistent")
+        fixed_fields = counters[2:]  # Allocator counts and end-state outcomes are deterministic.
+        if any(row[key] != rows[0][key] for key in fixed_fields):
+            raise ValueError("repeat allocation counts or outcomes differ for the identical request stream")
 
 
 def summarize(rows: list[dict]) -> list[dict]:
@@ -89,9 +200,9 @@ def summarize(rows: list[dict]) -> list[dict]:
     for (workload, requests, mode), values in groups.items():
         summary.append({
             "workload": workload, "requests": requests, "mode": mode, "repeats": len(values),
-            "median_events_per_second": statistics.median(v["events_per_second"] for v in values),
-            "min_events_per_second": min(v["events_per_second"] for v in values),
-            "max_events_per_second": max(v["events_per_second"] for v in values),
+            "median_requests_per_second": statistics.median(v["requests_per_second"] for v in values),
+            "min_requests_per_second": min(v["requests_per_second"] for v in values),
+            "max_requests_per_second": max(v["requests_per_second"] for v in values),
             "median_latency_mean_ns": statistics.median(v["latency_mean_ns"] for v in values),
             "median_latency_p50_ns": statistics.median(v["latency_p50_ns"] for v in values),
             "median_latency_p95_ns": statistics.median(v["latency_p95_ns"] for v in values),
@@ -118,7 +229,7 @@ def markdown_report(summary: list[dict], info: dict) -> str:
              "| Workload | Requests | Mode | requests/s | mean ns | p50 ns | p95 ns | p99 ns | allocations | peak requested MiB |",
              "|---|---:|---|---:|---:|---:|---:|---:|---:|---:|"]
     for row in summary:
-        lines.append(f"| {row['workload']} | {row['requests']:,} | {row['mode']} | {row['median_events_per_second']:,.0f} | {row['median_latency_mean_ns']:,.0f} | {row['median_latency_p50_ns']:,.0f} | {row['median_latency_p95_ns']:,.0f} | {row['median_latency_p99_ns']:,.0f} | {row['allocations']:,} | {row['peak_live_requested_bytes'] / 2**20:.2f} |")
+        lines.append(f"| {row['workload']} | {row['requests']:,} | {row['mode']} | {row['median_requests_per_second']:,.0f} | {row['median_latency_mean_ns']:,.0f} | {row['median_latency_p50_ns']:,.0f} | {row['median_latency_p95_ns']:,.0f} | {row['median_latency_p99_ns']:,.0f} | {row['allocations']:,} | {row['peak_live_requested_bytes'] / 2**20:.2f} |")
     lines += ["", "## Pool / baseline ratios", "", "A throughput ratio above 1 favors the pool; a memory or p99 ratio above 1 means the pool used more memory or had a higher recorded tail.", "",
               "| Workload | Requests | throughput ratio | p99 ratio | allocation-count ratio | peak memory ratio |",
               "|---|---:|---:|---:|---:|---:|"]
@@ -131,7 +242,7 @@ def markdown_report(summary: list[dict], info: dict) -> str:
             continue
         def ratio(key: str) -> str:
             return f"{pool[key] / row[key]:.3f}" if row[key] else "n/a"
-        lines.append(f"| {row['workload']} | {row['requests']:,} | {ratio('median_events_per_second')} | {ratio('median_latency_p99_ns')} | {ratio('allocations')} | {ratio('peak_live_requested_bytes')} |")
+        lines.append(f"| {row['workload']} | {row['requests']:,} | {ratio('median_requests_per_second')} | {ratio('median_latency_p99_ns')} | {ratio('allocations')} | {ratio('peak_live_requested_bytes')} |")
     lines += ["", "These are observations on this machine, not production latency guarantees. Read docs/performance.md for instrumentation and experimental limitations.", ""]
     return "\n".join(lines)
 
@@ -148,16 +259,24 @@ def main() -> int:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--warmups", type=int, default=1)
     parser.add_argument("--seed", type=int, default=305419896)
+    parser.add_argument("--allow-unverified-build", action="store_true", help="allow missing CMake/compile-command provenance (known Debug/sanitized builds are still rejected)")
     args = parser.parse_args()
-    if args.repeats < 1 or args.warmups < 0 or any(n < 1 for n in args.sizes):
-        parser.error("sizes/repeats must be positive and warmups nonnegative")
+    if args.repeats < 1 or args.warmups < 0 or any(not 1 <= n <= 100000000 for n in args.sizes) or not 0 <= args.seed <= 2**64 - 1:
+        parser.error("sizes must be 1..100000000, repeats positive, warmups nonnegative, and seed a uint64")
+    if any(len(values) != len(set(values)) for values in (args.sizes, args.workloads, args.modes)):
+        parser.error("sizes, workloads, and modes must not contain duplicates")
     build = args.build_dir.resolve()
     executable = (args.executable or build / ("apexmatch_bench.exe" if os.name == "nt" else "apexmatch_bench")).resolve()
     if not executable.is_file():
         parser.error(f"benchmark executable does not exist: {executable}")
     output = args.output.resolve()
-    output.mkdir(parents=True, exist_ok=True)
-    info = metadata(root, build, executable, args)
+    try:
+        build_info = cache_metadata(build)
+        build_verification = verify_build(build_info, args.allow_unverified_build)
+        prepare_output(output)
+    except (ValueError, OSError) as error:
+        parser.error(str(error))
+    info = metadata(root, build, executable, args, build_info, build_verification)
     (output / "metadata.json").write_text(json.dumps(info, indent=2) + "\n", encoding="utf-8")
     rows: list[dict] = []
     try:
@@ -170,11 +289,8 @@ def main() -> int:
                     print(f"Measuring {workload}: {size:,} requests, {mode}", flush=True)
                     completed = subprocess.run(command, capture_output=True, text=True, check=True)
                     new_rows = [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
-                    if len(new_rows) != args.repeats:
-                        raise RuntimeError(f"expected {args.repeats} observations; received {len(new_rows)}")
+                    validate_observations(new_rows, size, workload, mode, args)
                     for row in new_rows:
-                        if (row["requests"], row["workload"], row["mode"], row["seed"]) != (size, workload, mode, args.seed):
-                            raise RuntimeError("benchmark output does not match requested configuration")
                         comparable = [other for other in rows if (other["workload"], other["requests"], other["seed"]) == (workload, size, args.seed)]
                         for other in comparable:
                             if any(row[field] != other[field] for field in ("emitted_events", "executions", "accepted_adds", "active_orders")):
@@ -183,7 +299,7 @@ def main() -> int:
                         raw.write(json.dumps(row, separators=(",", ":")) + "\n")
                     raw.flush()
                     rows.extend(new_rows)
-    except (OSError, RuntimeError, subprocess.CalledProcessError, json.JSONDecodeError) as error:
+    except (OSError, RuntimeError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as error:
         print(f"Benchmark failed; partial raw observations retained at {output}: {error}", file=sys.stderr)
         if isinstance(error, subprocess.CalledProcessError):
             print(error.stderr, file=sys.stderr)

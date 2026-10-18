@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -142,7 +143,11 @@ Latency latencies(const std::vector<Request>& requests, AllocationMode mode) {
     engine.check_invariants();
     const auto mean = std::accumulate(samples.begin(), samples.end(), 0.0) / static_cast<double>(samples.size());
     std::sort(samples.begin(), samples.end());
-    const auto percentile = [&](std::size_t percent) { return samples[(samples.size() * percent + 99) / 100 - 1]; };
+    // Nearest rank without a size*percent intermediate that can overflow size_t.
+    const auto percentile = [&](std::size_t percent) {
+        const auto rank = (samples.size() / 100) * percent + ((samples.size() % 100) * percent + 99) / 100;
+        return samples[rank - 1];
+    };
     return {mean, percentile(50), percentile(95), percentile(99), outcome(engine, emitted)};
 }
 struct Memory { allocation_probe::Counts counts; std::uint64_t retained{}; Outcome state; };
@@ -159,17 +164,24 @@ Memory memory(const std::vector<Request>& requests, AllocationMode mode) {
     }
     if (resource.counts.live_bytes != 0) throw std::runtime_error("allocation probe observed live book memory after engine destruction");
     return measured;
-}std::int64_t clock_overhead() {
+}
+std::int64_t clock_overhead() {
     std::vector<std::int64_t> samples(10000);
     for (auto& sample : samples) { const auto a = Clock::now(); const auto b = Clock::now(); sample = std::chrono::duration_cast<Nanoseconds>(b - a).count(); }
     std::sort(samples.begin(), samples.end());
     return samples[samples.size() / 2];
 }
 std::uint64_t number(std::string_view value) {
-    std::size_t used{};
-    const auto result = std::stoull(std::string(value), &used, 10);
-    if (used != value.size() || value.empty() || value.front() == '-') throw std::runtime_error("invalid nonnegative integer");
+    std::uint64_t result{};
+    const auto parsed = std::from_chars(value.data(), value.data() + value.size(), result);
+    if (value.empty() || parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size())
+        throw std::runtime_error("invalid nonnegative integer");
     return result;
+}
+std::size_t size_number(std::string_view value) {
+    const auto result = number(value);
+    if (result > std::numeric_limits<std::size_t>::max()) throw std::runtime_error("integer exceeds size_t");
+    return static_cast<std::size_t>(result);
 }
 struct Config { std::size_t size{10000}, warmups{1}, repeats{3}; std::uint64_t seed{305419896}; std::string workload{"all"}, mode{"both"}, format{"json"}, output; bool profile_only{}; };
 Config arguments(int argc, char** argv) {
@@ -184,9 +196,9 @@ Config arguments(int argc, char** argv) {
         if (option == "--profile-only") { c.profile_only = true; continue; }
         if (++i == argc) throw std::runtime_error("missing option value");
         const std::string value = argv[i];
-        if (option == "--size") c.size = static_cast<std::size_t>(number(value));
-        else if (option == "--warmups") c.warmups = static_cast<std::size_t>(number(value));
-        else if (option == "--repeats") c.repeats = static_cast<std::size_t>(number(value));
+        if (option == "--size") c.size = size_number(value);
+        else if (option == "--warmups") c.warmups = size_number(value);
+        else if (option == "--repeats") c.repeats = size_number(value);
         else if (option == "--seed") c.seed = number(value);
         else if (option == "--workload") c.workload = value;
         else if (option == "--mode") c.mode = value;
@@ -212,9 +224,9 @@ void emit(std::ostream& output, const Config& config, const std::string& workloa
                << m.counts.allocations << ',' << m.counts.requested_bytes << ',' << m.counts.peak_bytes << ',' << m.retained << ','
                << b.state.emitted << ',' << b.state.executions << ',' << b.state.accepted << ',' << b.state.active << '\n';
     } else {
-        output << "{\"schema_version\":1,\"workload\":\"" << workload << "\",\"mode\":\"" << label << "\",\"requests\":" << config.size
+        output << "{\"schema_version\":2,\"workload\":\"" << workload << "\",\"mode\":\"" << label << "\",\"requests\":" << config.size
                << ",\"seed\":" << config.seed << ",\"repeat\":" << repeat << ",\"warmups\":" << config.warmups
-               << ",\"batch_ns\":" << b.nanoseconds << ",\"events_per_second\":" << throughput << ",\"latency_mean_ns\":" << l.mean
+               << ",\"batch_ns\":" << b.nanoseconds << ",\"requests_per_second\":" << throughput << ",\"latency_mean_ns\":" << l.mean
                << ",\"latency_p50_ns\":" << l.p50 << ",\"latency_p95_ns\":" << l.p95 << ",\"latency_p99_ns\":" << l.p99
                << ",\"timer_pair_median_ns\":" << timer_ns << ",\"allocations\":" << m.counts.allocations
                << ",\"allocated_bytes_total\":" << m.counts.requested_bytes << ",\"peak_live_requested_bytes\":" << m.counts.peak_bytes
@@ -230,7 +242,7 @@ int main(int argc, char** argv) {
         std::ofstream file;
         if (!config.output.empty()) { file.open(config.output); if (!file) throw std::runtime_error("cannot open output file"); }
         std::ostream& output = config.output.empty() ? std::cout : file;
-        if (config.format == "csv") output << "workload,mode,requests,seed,repeat,warmups,batch_ns,events_per_second,latency_mean_ns,latency_p50_ns,latency_p95_ns,latency_p99_ns,timer_pair_median_ns,allocations,allocated_bytes_total,peak_live_requested_bytes,retained_requested_bytes,emitted_events,executions,accepted_adds,active_orders\n";
+        if (config.format == "csv") output << "workload,mode,requests,seed,repeat,warmups,batch_ns,requests_per_second,latency_mean_ns,latency_p50_ns,latency_p95_ns,latency_p99_ns,timer_pair_median_ns,allocations,allocated_bytes_total,peak_live_requested_bytes,retained_requested_bytes,emitted_events,executions,accepted_adds,active_orders\n";
         const auto timer_ns = clock_overhead();
         for (const auto& name : workload_names) {
             if (config.workload != "all" && config.workload != name) continue;

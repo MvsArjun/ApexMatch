@@ -3,3 +3,16 @@
 *.profraw
 *.profdata
 __pycache__/
+/CMakeUserPresets.json
+/CMakeCache.txt
+/CMakeFiles/
+/Testing/
+/results/local/
+/results/profile/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.etl
+*.data

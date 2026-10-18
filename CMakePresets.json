@@ -13,6 +13,7 @@
     {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}},
     {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}},
     {"name": "asan", "configurePreset": "asan", "output": {"outputOnFailure": true}, "environment": {"ASAN_OPTIONS": "detect_leaks=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"}},
+    {"name": "asan-windows", "inherits": "asan", "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"}, "environment": {"ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1"}},
     {"name": "tsan", "configurePreset": "tsan", "output": {"outputOnFailure": true}, "environment": {"TSAN_OPTIONS": "halt_on_error=1"}}
   ]
 }
