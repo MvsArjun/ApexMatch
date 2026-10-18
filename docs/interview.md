@@ -2,6 +2,8 @@
 
 Use these answers as explanations to understand, not scripts to memorize. Connect every claim to the delivered [core](../src/engine.cpp), [extensions](../src/extensions.cpp), [tests](../tests/core_tests.cpp), and [performance methodology](performance.md).
 
+The [core audit](core-audit.md) explains reproduced defects and new boundary/resource-failure coverage. Use the current [verification record](verification.md) for exact build and pass counts. The implementation-based [practice questions](interview-practice.md) and timed [project walkthrough](project-walkthrough.md) provide additional preparation.
+
 ## 1. What exactly does price-time priority mean?
 
 For a buy taker, choose the lowest compatible ask; for a sell taker, choose the highest compatible bid. Only within that best price do you choose the earliest arrival. An older ask at 102 loses to a newer ask at 101 when a buy limit is 102. The ordered maps supply price order, while each level's list supplies time order. The engine assigns arrival from its monotonically increasing request sequence rather than a wall-clock timestamp, avoiding clock ties and nondeterminism.
@@ -62,6 +64,8 @@ Integer ticks avoid binary floating-point equality/rounding surprises in price o
 
 That lifetime bound also bounds active aggregate sums. Each execution is at most the positive maker/taker remainder; conservation bounds traded totals. Sequence capacity is checked before mutation using a conservative upper bound for emitted events. Notional `price * quantity` is not computed; adding P&L or notional accounting would need checked multiplication or a wider arithmetic design. A safe addition test uses `new_value <= max - current`, avoiding overflow while testing for overflow.
 
+Boundary tests now exercise the actual internal [sequence-capacity predicate](../src/sequence_capacity.hpp) near `UINT64_MAX`. They verify the preflight decision without injecting counters into a live engine. Typed public APIs also validate unknown enum values; the final audit reproduced and fixed an out-of-bounds event-name lookup that strict text parsing alone could not prevent.
+
 ## 11. What does quantity conservation prove, and what does it miss?
 
 Across both sides, `submitted = 2*traded + cancelled + resting`. Each trade removes one unit from the buy and one from the sell, hence twice traded quantity. Per-order tests additionally assert `submitted_order = executed_order + cancelled_order + remaining_order` and no overfill.
@@ -70,7 +74,7 @@ Conservation alone does not prove price priority, FIFO, execution price, correct
 
 ## 12. What does the reference model contribute?
 
-The reference chooses the next maker using a deliberately simple representation/selection process, rather than cloning the production map/list/index algorithm. Fixed-seed randomized streams compare acceptance, trades, complete resting state, and quantities after each operation for both allocator modes. A failure prints the seed and step so it can be reproduced.
+The reference chooses the next maker using a deliberately simple representation/selection process, rather than cloning the production map/list/index algorithm. Fixed-seed randomized streams compare acceptance, complete event order, exact rejection reasons, trades, complete resting state, and quantities after each operation for both allocator modes. A failure prints the seed and step so it can be reproduced. The eight seed/allocator combinations process 40,000 requests.
 
 An independent oracle reduces the chance that an implementation mistake is repeated in the test. It is still not a mathematical proof: the model can have bugs, inputs are finite, and rare resource failures may not be exercised. Directed boundary tests remain necessary, as do sanitizers for memory/undefined behavior and separate tests for network/queue semantics.
 
@@ -91,6 +95,8 @@ The delivered benchmark uses a counting PMR upstream, forwarding both requested 
 Throughput is incoming requests processed per second across one batch. Latency is the elapsed time for an individual engine request including destruction of its returned events, measured in a separate pass. Throughput is measured with one clock pair for the entire batch; latency has a pair per request, so timer overhead perturbs it. Its reciprocal mean is therefore not expected to equal independently measured throughput.
 
 p50 is the median request; p95/p99 characterize upper tails. They are not maxima or guarantees. The summary reports the median of repeat p99s, not the p99 of all samples pooled together. A process descheduling pause, frequency shift, thermal throttling, or virtualized clock can affect tails. Core numbers exclude parsing, publication, queueing, TCP, disk, and console work, so they are not end-to-end exchange latency.
+
+Current schema 2 calls batch throughput `requests_per_second`. Historical schema 1 called this same incoming-request metric `events_per_second`; it did not count all emitted events. Keep historical observations labeled and use the current report linked from [performance.md](performance.md). The audited runner requires optimized, unsanitized build evidence and validates raw observation consistency before summarizing.
 
 ## 16. How does the bounded queue establish synchronization?
 

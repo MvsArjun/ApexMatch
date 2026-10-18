@@ -1,0 +1,17 @@
+Test project <repo>/build/audit-clang-debug
+    Start 1: core_and_extensions
+1/6 Test #1: core_and_extensions ..............   Passed    9.30 sec
+    Start 2: replay
+2/6 Test #2: replay ...........................   Passed    2.16 sec
+    Start 3: network
+3/6 Test #3: network ..........................   Passed    3.04 sec
+    Start 4: extension_examples
+4/6 Test #4: extension_examples ...............   Passed    4.31 sec
+    Start 5: benchmark_tooling
+5/6 Test #5: benchmark_tooling ................   Passed    0.31 sec
+    Start 6: release_tooling
+6/6 Test #6: release_tooling ..................   Passed    2.26 sec
+
+100% tests passed out of 6
+
+Total Test time (real) =  21.41 sec

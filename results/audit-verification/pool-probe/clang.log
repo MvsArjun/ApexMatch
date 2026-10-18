@@ -1,0 +1,6 @@
+upstream allocate 288 alignment 8 remaining 2
+upstream allocate 1048 alignment 16 remaining 1
+upstream allocate 1320 alignment 16 remaining 0
+upstream deallocate 1048
+upstream deallocate 288
+bad_alloc propagated safely

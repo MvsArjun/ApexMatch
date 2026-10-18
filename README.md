@@ -6,10 +6,12 @@ producer/consumer pipeline, a localhost TCP interface, and a simulated TWAP
 client. It is intended for studying systems engineering and discussing quant
 developer interviews. It has no brokerage connection or real-order capability.
 
-The implementation and examples are complete. Native Windows Clang builds,
-automated tests, and ASan/UBSan checks have been exercised; Linux/WSL2, TSan,
-LeakSanitizer and Linux `perf` need the supported Linux environment. Consult
-[recorded verification](docs/verification.md) for exact evidence and limits.
+All features are implemented. The engineering audit passed all six test groups
+with native Clang Debug, Release, and ASan/UBSan. Native GCC 16.2 builds but fails
+the mandatory pool-allocation-failure test in its standard library; the full
+compiler matrix is not green. Linux/WSL2, TSan, leak detection and hosted CI
+remain unverified. Consult [verification](docs/verification.md) and the
+[isolated runtime issue](docs/toolchain-issue.md) before describing release status.
 
 ## Start here
 
@@ -24,6 +26,8 @@ structures, C++ concepts, worked examples, tests, complexity and interview point
 * [Benchmark methodology and measured experiment](docs/performance.md)
 * [Interview questions with substantive answers](docs/interview.md)
 * [Verification record and environment limitations](docs/verification.md)
+* [Engineering audit and release report](docs/audit-report.md)
+* [Interview walkthrough](docs/project-walkthrough.md), [20 demanding questions](docs/interview-practice.md), and [resume notes](docs/resume-notes.md)
 
 ## Build and test on Linux / WSL2
 
@@ -35,7 +39,7 @@ failure in debug and release builds; it is not disabled by `NDEBUG`.
 ```sh
 sudo apt-get update
 sudo apt-get install -y g++ clang cmake ninja-build python3
-cmake --preset release -DCMAKE_CXX_COMPILER=g++
+cmake --preset release -DCMAKE_CXX_COMPILER=clang++
 cmake --build --preset release --parallel
 ctest --preset release
 ```
@@ -43,14 +47,17 @@ ctest --preset release
 For a debug build, substitute `debug`. A build directory remembers its compiler;
 choose a fresh directory when switching compilers. All paths below are relative
 to the repository root. On Windows, WSL2 runs these commands inside Ubuntu.
-An additional native Windows path using LLVM-MinGW is documented in
-[verification](docs/verification.md), including this machine's exact tool paths.
+Native Windows LLVM-MinGW instructions are in [verification](docs/verification.md).
+Compiler versions above are language/build minimums, not claims that every
+runtime was tested. The tested GCC 16.2/libstdc++ resource-exhaustion failure
+remains open, and the Linux matrix has not run on this machine.
 
 ```sh
 # AddressSanitizer + UndefinedBehaviorSanitizer, including Linux leak detection
 cmake --preset asan -DCMAKE_CXX_COMPILER=clang++
 cmake --build --preset asan --parallel
 ctest --preset asan
+# Native Windows uses: ctest --preset asan-windows (unsupported leak check off).
 
 # ThreadSanitizer must have its own build, separate from ASan.
 cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++
@@ -183,20 +190,21 @@ Baseline PMR delegates to ordinary allocation; the optional pool changes only
 the book allocator. Iterators and ownership are explained in [design](docs/design.md).
 
 Let N be active orders, L relevant levels, K executions, and D requested depth.
-Under average hash behavior:
+Let A be lifetime accepted IDs. Under average hash behavior:
 
 | Operation | Cost in this implementation |
 |---|---|
-| Rest a noncrossing order | O(log L), plus hash insertion/possible rehash and allocation |
-| Match an incoming order | O(K log L + log L), including absolute-update map lookups and level removals |
-| Cancel | Expected O(log L): hash lookup, map lookup, constant-time list erase |
+| Rest a noncrossing order | O(log(L+1)) amortized, plus allocation |
+| Match an incoming order | O((K+1) log(L+1)), including absolute-update map lookups and amortized level removals |
+| Cancel | Expected O(log(L+1)): hash lookup, map lookup, constant-time list erase |
 | Best bid/ask | O(1) |
 | Quantity at a price | O(log L) |
 | Top D depth | O(min(D,L)) per side, plus result allocation |
 | Active-order count | O(1) |
 | Enumerate orders | O(N log N), because output sorts by arrival |
 
-Hash operations have pathological linear worst cases. Full invariant checks
+Hash operations have pathological linear worst cases: active indexes scale
+with N, and lifetime ID lookup/rehash can scale with A. Full invariant checks
 are O(N) expected and allocate temporary storage; they are excluded from matching
 timings. Total memory is O(N + L + A), where A is lifetime accepted IDs. Pool
 memory may retain its high-water capacity until the engine is destroyed.
@@ -220,13 +228,13 @@ JSON, I/O, engine construction/destruction and invariants. Results include mean,
 p50/p95/p99, timer-pair overhead, upstream allocation counts, and approximate
 book memory; requested bytes are not process RSS.
 
-The supplied [machine-readable measurements](results/native-clang23/results.json)
-and [full comparison table](results/native-clang23/summary.md) record this
+The historical [machine-readable measurements](results/native-clang23/results.json)
+and [full comparison table](results/native-clang23/summary.md) record the initial
 machine, compiler, flags, seed and repeat spread. Read
 [the measured experiment](docs/performance.md) before interpreting the pool as
 an improvement. The ordinary-allocation baseline remains the default.
 
-On the Ryzen 5 6600H / Windows 11 / Clang 23 release run, the million-request
+On the initial Ryzen 5 6600H / Windows 11 / Clang 23 release run, the million-request
 noncrossing workload measured **1.84 million requests/s baseline versus 3.06
 million with pooling**. Its p99 was 900 ns versus 600 ns. Book upstream
 allocations fell from 3,002,040 to 129, while peak requested book memory grew
@@ -250,3 +258,6 @@ tradeoffs, not production-exchange guarantees.
 
 The [verification report](docs/verification.md) explicitly separates checks run
 here from Linux-only checks still requiring another environment.
+The MIT license was explicitly confirmed during this audit. No GitHub
+repository has been created or pushed; [publication approval](docs/release-preparation.md)
+and unresolved verification are separate from implementation completeness.

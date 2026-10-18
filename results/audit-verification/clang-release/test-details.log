@@ -1,0 +1,136 @@
+Start testing: Oct 18 22:06 India Standard Time
+----------------------------------------------------------
+1/6 Testing: core_and_extensions
+1/6 Test: core_and_extensions
+Command: "<repo>/build/audit-clang-release/apex_tests.exe"
+Directory: <repo>/build/audit-clang-release
+"core_and_extensions" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+[PASS] empty and single-order books
+[PASS] single buy/sell fills at maker price
+[PASS] non-crossing orders and ordered depth
+[PASS] better price precedes older order
+[PASS] FIFO partial maker retains priority
+[PASS] multi-order multi-level sweep and taker residual
+[PASS] cancellation lifecycle and middle FIFO removal
+[PASS] duplicate IDs, completed IDs, and rejected ID reuse
+[PASS] invalid requests preserve the book
+[PASS] int64 and uint64 arithmetic boundaries
+[PASS] typed enum and allocator argument validation
+[PASS] sequence capacity preflight boundaries
+[PASS] allocation failure safely destroys baseline and pool books
+[PASS] precise deterministic event order and sequences
+[PASS] strict parser malformed and out-of-range input
+[PASS] query sequencing and JSON escaping
+[PASS] deterministic replay and allocator equivalence
+[PASS] reference baseline seed 0
+[PASS] reference baseline seed 42
+[PASS] reference baseline seed 20261018
+[PASS] reference baseline seed 729704103918
+[PASS] reference pool seed 0
+[PASS] reference pool seed 42
+[PASS] reference pool seed 20261018
+[PASS] reference pool seed 729704103918
+[PASS] bounded queue FIFO, capacity, multi-producer, and shutdown
+[PASS] pipeline equivalence, bounded lines, EOF, and output failure
+[PASS] market data incrementals, top, snapshots, and rejection silence
+[PASS] TWAP scheduling, fills, cancellation, collisions, and overflow
+All tests passed (29 named cases).
+<end of output>
+Test time =   2.29 sec
+----------------------------------------------------------
+Test Passed.
+"core_and_extensions" end time: Oct 18 22:06 India Standard Time
+"core_and_extensions" time elapsed: 00:00:02
+----------------------------------------------------------
+
+2/6 Testing: replay
+2/6 Test: replay
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/replay_test.py" "<repo>/build/audit-clang-release/apex_cli.exe" "<repo>/examples"
+Directory: <repo>/build/audit-clang-release
+"replay" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+Replay golden file, repeatability, stdin, EOF, and oversized-record tests passed.
+<end of output>
+Test time =   3.87 sec
+----------------------------------------------------------
+Test Passed.
+"replay" end time: Oct 18 22:06 India Standard Time
+"replay" time elapsed: 00:00:03
+----------------------------------------------------------
+
+3/6 Testing: network
+3/6 Test: network
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/network_test.py" "--server" "<repo>/build/audit-clang-release/apex_server.exe" "--client" "<repo>/build/audit-clang-release/apex_client.exe"
+Directory: <repo>/build/audit-clang-release
+"network" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+network integration checks passed
+<end of output>
+Test time =   3.66 sec
+----------------------------------------------------------
+Test Passed.
+"network" end time: Oct 18 22:06 India Standard Time
+"network" time elapsed: 00:00:03
+----------------------------------------------------------
+
+4/6 Testing: extension_examples
+4/6 Test: extension_examples
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/extensions_e2e.py" "--pipeline" "<repo>/build/audit-clang-release/apex_pipeline.exe" "--twap" "<repo>/build/audit-clang-release/apex_twap.exe" "--examples" "<repo>/examples"
+Directory: <repo>/build/audit-clang-release
+"extension_examples" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+pipeline and TWAP executable examples passed
+<end of output>
+Test time =   2.68 sec
+----------------------------------------------------------
+Test Passed.
+"extension_examples" end time: Oct 18 22:06 India Standard Time
+"extension_examples" time elapsed: 00:00:02
+----------------------------------------------------------
+
+5/6 Testing: benchmark_tooling
+5/6 Test: benchmark_tooling
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/benchmark_tooling_test.py"
+Directory: <repo>/build/audit-clang-release
+"benchmark_tooling" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.013s
+
+OK
+<end of output>
+Test time =   0.30 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_tooling" end time: Oct 18 22:06 India Standard Time
+"benchmark_tooling" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: release_tooling
+6/6 Test: release_tooling
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/release_tooling_test.py"
+Directory: <repo>/build/audit-clang-release
+"release_tooling" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 4.658s
+
+OK
+<end of output>
+Test time =   5.09 sec
+----------------------------------------------------------
+Test Passed.
+"release_tooling" end time: Oct 18 22:06 India Standard Time
+"release_tooling" time elapsed: 00:00:05
+----------------------------------------------------------
+
+End testing: Oct 18 22:06 India Standard Time

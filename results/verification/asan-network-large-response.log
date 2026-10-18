@@ -2,8 +2,8 @@ Start testing: Oct 18 21:48 India Standard Time
 ----------------------------------------------------------
 3/4 Testing: network
 3/4 Test: network
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/network_test.py" "--server" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_server.exe" "--client" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_client.exe"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/network_test.py" "--server" "<repo>/build/asan/apex_server.exe" "--client" "<repo>/build/asan/apex_client.exe"
+Directory: <repo>/build/asan
 "network" start time: Oct 18 21:48 India Standard Time
 Output:
 ----------------------------------------------------------

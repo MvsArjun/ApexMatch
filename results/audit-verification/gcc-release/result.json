@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-18T16:35:13.334539+00:00",
+  "source_revision": "40d6242f55812be3671103d65c03f1d654bba5d8",
+  "compiler": "g++ (GCC) 16.2.0\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "configuration": "Release",
+  "sanitizer": "none",
+  "commands": [
+    {
+      "stage": "configure",
+      "arguments": [
+        "cmake",
+        "-S",
+        "<repo>",
+        "-B",
+        "<repo>\\build\\audit-gcc-release",
+        "-G",
+        "Ninja",
+        "-DCMAKE_CXX_COMPILER=g++",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DAPEX_SANITIZERS=OFF",
+        "-DAPEX_TSAN=OFF",
+        "-DAPEX_BUILD_BENCHMARKS=ON"
+      ],
+      "exit_code": 0
+    },
+    {
+      "stage": "build",
+      "arguments": [
+        "cmake",
+        "--build",
+        "<repo>\\build\\audit-gcc-release",
+        "--parallel",
+        "3"
+      ],
+      "exit_code": 0
+    },
+    {
+      "stage": "test",
+      "arguments": [
+        "ctest",
+        "--test-dir",
+        "<repo>\\build\\audit-gcc-release",
+        "--output-on-failure",
+        "--output-junit",
+        "<repo>\\build\\audit-gcc-release\\audit-junit.xml"
+      ],
+      "exit_code": 8
+    }
+  ],
+  "result": "failed: test",
+  "finished_utc": "2026-10-18T16:36:16.460811+00:00"
+}

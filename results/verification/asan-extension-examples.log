@@ -2,8 +2,8 @@ Start testing: Oct 18 21:42 India Standard Time
 ----------------------------------------------------------
 4/4 Testing: extension_examples
 4/4 Test: extension_examples
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/extensions_e2e.py" "--pipeline" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_pipeline.exe" "--twap" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_twap.exe" "--examples" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/examples"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/extensions_e2e.py" "--pipeline" "<repo>/build/asan/apex_pipeline.exe" "--twap" "<repo>/build/asan/apex_twap.exe" "--examples" "<repo>/examples"
+Directory: <repo>/build/asan
 "extension_examples" start time: Oct 18 21:42 India Standard Time
 Output:
 ----------------------------------------------------------

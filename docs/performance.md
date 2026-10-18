@@ -2,6 +2,8 @@
 
 The project preserves two configurations of the same matching implementation. `AllocationMode::Baseline` gives the PMR containers `std::pmr::new_delete_resource()`. `AllocationMode::Pool` gives those same containers an engine-owned `std::pmr::unsynchronized_pool_resource`. Container types, matching logic, validation, events, hash functions, and input streams stay the same. The baseline remains the application default: the experimental pool is an explicit choice, not a universal performance promise.
 
+[benchmark-audit.md](benchmark-audit.md) records the methodology review, evidence-handling fixes, optimization decision, and remaining interpretation limits.
+
 ## Build and run
 
 Use a release build without sanitizers. From the repository root on Linux or WSL2:
@@ -13,7 +15,7 @@ ctest --preset release
 python3 tools/run_benchmarks.py --build-dir build/release --output results/benchmark --repeats 3
 ```
 
-The runner detects `.exe` on Windows; use `python` there. `--executable PATH` overrides executable discovery, including for nonstandard build layouts. A compiler installed outside PATH must be available when CMake configures the build; any runtime libraries required by that compiler must also be available when the runner launches executables.
+The runner detects `.exe` on Windows; use `python` there. `--executable PATH` overrides executable discovery, including for nonstandard build layouts, and must refer to the fresh executable from the supplied build directory. The runner checks that its CMake cache says `Release`, its benchmark compile command enables optimization, and sanitizer options/instrumentation are absent. It rejects known Debug or instrumented builds. Missing cache/compile-command provenance requires the explicit `--allow-unverified-build` override and is marked unverified in metadata. This inspection cannot prove that an arbitrary executable corresponds to its cache; build the current sources immediately before measuring. A compiler installed outside PATH must be available when CMake configures the build; any runtime libraries required by that compiler must also be available when the runner launches executables.
 
 A quick check and a focused measurement:
 
@@ -23,7 +25,9 @@ python3 tools/run_benchmarks.py --build-dir build/release --sizes 100000 --workl
 build/release/apexmatch_bench --size 100000 --workload immediate --mode baseline --format csv --output results/immediate.csv
 ```
 
-The runner writes `metadata.json`, `raw.jsonl`, `raw.csv`, `results.json`, `summary.csv`, and `summary.md`. Raw records retain individual repeats; summaries report their medians and throughput range. Raw records are saved incrementally if a later workload fails. Rerunning into the same directory replaces its prior measurements; choose another output directory to preserve an experiment.
+The runner writes `metadata.json`, `raw.jsonl`, `raw.csv`, `results.json`, `summary.csv`, and `summary.md`. Raw records retain individual repeats; summaries report their medians and throughput range. Raw records are saved incrementally if a later workload fails. The runner refuses a directory containing any previous report file, so failed runs cannot leave an old summary appearing to describe new partial observations. Choose a new directory for every experiment.
+
+Metadata records the compiler version, exact compile flags, CPU/OS/RAM, seed, warm-ups, repeat order, source revision/status, and SHA-256 digests of the executable and relevant source/build/tooling files. Absolute repository, build, toolchain, and home paths use placeholders; other absolute path tokens retain their basename. These substitutions preserve flag values and repository layout while avoiding publishing a developer's local directory names. Digests identify the captured files; they do not by themselves prove executable/source correspondence.
 
 ## Workload definitions
 
@@ -44,7 +48,7 @@ The complete matrix uses 10,000, 100,000, and 1,000,000 requests, all six worklo
 
 Three distinct passes use a fresh engine and the identical pre-generated stream:
 
-1. **Batch throughput:** one `steady_clock` interval surrounds all calls to `add`/`cancel`, including processing and destruction of their returned event vectors. `events_per_second = input_requests * 1e9 / batch_ns`. Here “events” means incoming add/cancel requests, not the larger number of emitted events. `emitted_events` is recorded separately. Engine construction and destruction, generation, parsing, JSON, file/console I/O, invariant checking, and percentile calculation lie outside the interval.
+1. **Batch throughput:** one `steady_clock` interval surrounds all calls to `add`/`cancel`, including processing and destruction of their returned event vectors. Schema 2 names this metric `requests_per_second = input_requests * 1e9 / batch_ns`. Historical schema 1 called the same incoming-request metric `events_per_second`; it never measured the larger number of emitted events. `emitted_events` is recorded separately. Engine construction and destruction, generation, parsing, JSON, file/console I/O, invariant checking, and percentile calculation lie outside the interval.
 2. **Latency:** each request has its own pair of `steady_clock::now()` calls, again including result-vector destruction. The mean is the arithmetic mean; p50/p95/p99 use nearest rank over sorted integer nanosecond samples. No samples are discarded. A vector of samples is allocated before timing. Per-request timer calls perturb this pass, so its reciprocal mean is not the reported throughput.
 3. **Allocation/memory:** one untimed pass supplies a counting `std::pmr::memory_resource` as the engine's upstream. Baseline nodes/buckets call it directly; pool chunk requests call it through the pool. It forwards both the exact size and required alignment to `new_delete_resource`. `allocations` counts these upstream allocation calls, `allocated_bytes_total` is cumulative requested bytes, `peak_live_requested_bytes` is the maximum outstanding requested bytes, and `retained_requested_bytes` is outstanding bytes after the final request and before the engine is destroyed. The scan is reused for all timing repeats of that configuration because the request stream and allocator behavior are deterministic. It verifies that tracked bytes return to zero after engine destruction.
 
@@ -54,7 +58,7 @@ Timing passes use the default upstream directly and contain no allocation-counte
 
 `timer_pair_median_ns` is the median of 10,000 back-to-back clock pairs in that process. It is a scale reference, not a correction subtracted from every latency. Instruction ordering, OS scheduling, frequency changes, virtualized clocks, and coarse Windows clock granularity can affect samples. Individual samples may quantize or be zero on sufficiently coarse timers. Long tails may reflect descheduling rather than slow matching code.
 
-Each configuration has one full-size warm-up by default and three measured repeats. Invariants run after each timing pass. The runner alternates which mode runs first across workload/size pairs and launches a separate process for each mode. This reduces systematic ordering bias without eliminating thermal, frequency, and background-workload effects. Both modes have to produce the same counts across throughput, latency, and memory passes; correctness equivalence is established more thoroughly by the automated reference-model tests.
+Each configuration has one full-size warm-up by default and three measured repeats. Every pass constructs a fresh empty engine; warm-up exercises allocator/code/OS caches, rather than preloading an engine retained for measurement. The untimed allocation pass also precedes measured repeats. Invariants run after each timing pass. The runner alternates which mode runs first across workload/size pairs and launches a separate process for each mode. This reduces systematic ordering bias without eliminating thermal, frequency, and background-workload effects. Both modes have to produce the same counts across throughput, latency, and memory passes; correctness equivalence is established more thoroughly by the automated reference-model tests. The runner also validates repeat uniqueness, configuration fields, finite nonnegative metrics, throughput arithmetic, percentile ordering, memory bounds, and deterministic allocation/outcome counts. These consistency checks detect corrupt evidence, rather than prove full event-by-event equivalence.
 
 ## What the allocator experiment tests
 
@@ -64,9 +68,11 @@ This changes one major aspect: allocator resource. It does not simultaneously in
 
 Accepted IDs are never reused, so `seen_` grows with historical accepted adds even when active book size returns to zero. Cancellation and immediate-fill workloads therefore retain ID-history memory. A stable active-order count is not evidence of bounded total memory. A bounded session/recovery policy is needed for a production lifetime; this simulator makes that tradeoff visible.
 
-## Actual observations: native Clang 23 on Windows
+Allocator reliability also depends on the standard-library runtime. Final native GCC 16.2 Debug/Release testing found a pool-resource segmentation fault during injected upstream allocation failure, reproduced by a standalone standard-library-only program. The mandatory test remains enabled; those full GCC runs failed. Normal-allocation timing observations below use native Clang/libc++, and do not establish pool behavior during exhaustion or validate another runtime. See [core-audit.md](core-audit.md) for the reproducer and [verification.md](verification.md) for build outcomes.
 
-The complete matrix ran successfully on 18 October 2026: 6 workloads × 3 sizes × 2 modes × 3 repeats = **108 recorded observations**, with one full-size warm-up per mode/configuration. The host was an AMD Ryzen 5 6600H, 12 logical CPUs, 16,312,721,408 bytes of physical RAM (about 15.19 GiB), Windows 11 build 26300, and Clang 23.1.3 targeting `x86_64-w64-windows-gnu`. The release compile used C++20, `-O3 -DNDEBUG`, with sanitizers off. Recorded source revision: `21000218f16078c20f5b3271393035033436fa34`. Exact paths, flags, seed, invocation, and CPU details are in [metadata.json](../results/native-clang23/metadata.json).
+## Historical observations: native Clang 23 on Windows
+
+The original matrix ran successfully on 18 October 2026: 6 workloads × 3 sizes × 2 modes × 3 repeats = **108 recorded observations**, with one full-size warm-up per mode/configuration. The host was an AMD Ryzen 5 6600H, 12 logical CPUs, 16,312,721,408 bytes of physical RAM (about 15.19 GiB), Windows 11 build 26300, and Clang 23.1.3 targeting `x86_64-w64-windows-gnu`. The release compile used C++20, `-O3 -DNDEBUG`, with sanitizers off. Recorded source revision: `21000218f16078c20f5b3271393035033436fa34`. Flags, seed, invocation, and CPU details are in [metadata.json](../results/native-clang23/metadata.json). These are historical observations of that revision, rather than a promise about the audited revision.
 
 The [full generated report](../results/native-clang23/summary.md), [108 raw observations](../results/native-clang23/raw.csv), [summary CSV](../results/native-clang23/summary.csv), and [combined JSON](../results/native-clang23/results.json) are the evidence for the following analysis. The baseline/pool request and outcome counts agreed. Each timed pass completed its post-timing invariant check; the separate memory scans returned to zero tracked bytes after destruction.
 
@@ -129,6 +135,8 @@ bash tools/profile.sh build/profile noncrossing 1000000 results/profile
 The profile preset retains release optimization while adding debug symbols and frame pointers (`-O3 -DNDEBUG -g -fno-omit-frame-pointer`), making sampled call stacks useful without changing the release timing experiment. The helper defaults to `build/profile` and captures repeated hardware counters plus call-stack samples for each mode. Kernel permissions and some virtualized machines may disallow hardware counters; if so, record the exact error and use `perf record -e cpu-clock` where permitted. Native Windows does not provide Linux `perf`. Installing a userspace binary without the needed kernel support does not verify profiling.
 
 `--profile-only` avoids per-request latency sampling and allocation scans. Whole-process `perf` still observes generation, warm-up, invariant checks, constructors, destructors, timer calibration, and output outside the benchmark's matching interval. Filter sampled stacks to `MatchingEngine::add`/`cancel`, resource allocation, and event creation before attributing costs to the hot path. The checks themselves allocate a temporary set; they must not be confused with matching allocations.
+
+During the native Windows audit, Windows Performance Recorder was available and reported no active recording. Starting its CPU profile failed with host performance-policy error `0xc5585011`; no recording remained active. No ETW CPU samples or symbolized Windows call stacks were collected. Allocation census observations are available, while CPU attribution, hardware counters, and cache behavior remain unverified.
 
 Useful questions to investigate with measured stacks/counters:
 

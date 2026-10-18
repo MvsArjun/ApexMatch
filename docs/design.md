@@ -91,7 +91,7 @@ that upstream; the baseline forwards individual container allocations.
 | ID zero | `invalid_id`; IDs otherwise cover 1 through `UINT64_MAX`. |
 | Price or quantity <= 0 | `invalid_price` / `invalid_quantity`. |
 | Price or quantity > `INT64_MAX` | Parser `invalid_integer`; the typed API cannot represent it. |
-| Invalid typed `Side` value | `invalid_side`. |
+| Invalid typed `Side` value in ADD | `invalid_side` rejection. Query/serialization APIs throw `invalid_argument`. |
 | Previously accepted ID | `duplicate_id`, including completed and cancelled orders. |
 | Rejected ID | Not reserved; a corrected submission can use it. |
 | Cancel ID zero | `invalid_id`. |
@@ -116,6 +116,8 @@ for `2 * active_orders + 3` events and up to `active_orders` executions. Exhaust
 throws `overflow_error` before mutation. Counters cannot silently wrap. This
 bound may refuse a request earlier than strictly necessary near exhaustion.
 There is no public test-only way to fast-forward sequences to their maximum.
+The actual preflight predicate is tested independently at maximum boundaries;
+unknown typed event/command/allocation enums throw before indexing or mutation.
 
 A normal rejected request changes only request/rejection statistics and its
 rejection event, never orders, FIFO position or the accepted-ID registry.
@@ -199,9 +201,10 @@ scans a flat vector rather than repeating the indexed-map implementation.
 
 ## Complexity and memory
 
-Let N be active orders, L the price levels on the relevant side, K maker fills
-for the incoming order, and V exhausted price levels. Hash operations are
-average O(1), worst O(N) under pathological collisions/rehashes. For practical
+Let N be active orders, A lifetime accepted IDs, L the price levels on the
+relevant side, K maker fills for the incoming order, and V exhausted price
+levels. Hash operations are average O(1), worst O(N) for active indexes and
+O(A) for the lifetime registry under pathological collisions/rehashes. For practical
 hash behavior, adding a noncrossing remainder takes O(log L), and cancellation
 requires the average O(1) active lookup **plus O(log L) level lookup** and O(1)
 list erase. FIFO append/erase is O(1). Matching does K fills, erases V levels,

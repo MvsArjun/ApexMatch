@@ -2,6 +2,8 @@
 
 Start with a release/debug build and the tests described in the [README](../README.md). This guide assumes comfort with C++ syntax, maps, lists, and basic threads. Read one working component at a time, trace the example, then read its tests. All required code is supplied; optional modifications at the end are for practice after understanding the delivered behavior.
 
+The audited suite defines 25 named core cases and four named extension cases, including 40,000 differential requests. Consult [verification.md](verification.md) for actual configuration-specific pass counts and remaining platform blockers, and [core-audit.md](core-audit.md) for the reproduced core defect and coverage additions. The [project walkthrough](project-walkthrough.md) turns this reading sequence into an interview explanation.
+
 ## 1. Learn the domain using five requests
 
 **Problem:** match compatible buyers and sellers fairly while retaining the rest. A limit buy says “pay at most this price”; a limit sell says “receive at least this price.” A market order requests immediate execution without a price bound; ApexMatch implements limit orders only. A bid is a resting buy, an ask a resting sell. The highest bid and lowest ask are the best prices; ask minus bid is the spread. Market depth groups remaining quantity by price. The engine enforces matching rules; a strategy decides when and what to submit.
@@ -58,6 +60,8 @@ Trace a deeper sweep: sells 1 `2@100`, 2 `3@101`, 3 `4@101`; incoming buy 4 `8@1
 
 **Tests:** exact event-order/sequence, maker-price, FIFO, multi-order sweep, partial cancellation, and deterministic allocator-equivalence cases in [core_tests.cpp](../tests/core_tests.cpp). **Failure cases:** inactive cancellation, invalid numeric fields, duplicates, lifetime counter overflow, allocation failure. Business rejections preserve resting state; the simulator does not promise transaction rollback after arbitrary allocation failure. Treat resource exhaustion as fatal and rebuild from a known input stream.
 
+The sequence-exhaustion decision is isolated in the internal [sequence_capacity.hpp](../src/sequence_capacity.hpp) helper, which the engine and near-maximum boundary tests both use. This tests the production preflight arithmetic without adding a mutable test-only counter API. The allocation-failure test destroys engines at successive injected book-allocation failures and checks that all upstream requested bytes are released; it does not claim transactional rollback or failure coverage for every global allocation.
+
 ## 4. Read validation and the protocol boundary
 
 **Problem:** distinguish malformed syntax from syntactically valid but invalid business values. Read `parse_command`, `apply_command`, and `process_line` in [protocol.cpp](../src/protocol.cpp), then [cli.cpp](../apps/cli.cpp).
@@ -72,6 +76,8 @@ Comments start when the first token begins with `#`; blank/comment lines are ign
 
 **Tests:** strict-parser, invalid-state-preservation, arithmetic-boundary, rejected-ID reuse, JSON escaping, and query-sequencing cases in [core_tests.cpp](../tests/core_tests.cpp); golden replay in [replay_test.py](../tests/replay_test.py). **Interview discussion:** syntax and domain validation are different layers; rejected requests still belong in deterministic sequence history.
 
+The typed C++ interface is a separate boundary. An unknown `EventKind` previously indexed past the serializer's name array; a direct typed call reproduced the issue under UBSan. Serialization, side queries, allocation-mode construction and command application now reject unknown enum values with `invalid_argument`. Invalid sides passed to `add` retain their normal business-rejection event. Read the focused regression in `typed_enum_validation`.
+
 ## 5. Establish correctness with independent evidence
 
 **Problem:** a handful of happy paths cannot establish book consistency. Read `OrderBook::check_invariants` and `MatchingEngine::check_invariants`, then [reference_model.hpp](../tests/reference_model.hpp) and randomized comparisons in [core_tests.cpp](../tests/core_tests.cpp).
@@ -84,7 +90,7 @@ submitted_quantity = 2 * traded_quantity + cancelled_quantity + resting_quantity
 
 Both sides of each trade were submitted, hence the factor two. Tests also keep a per-order ledger: executed plus cancelled plus remaining equals the original submitted quantity, and executed never exceeds submitted. This catches errors that could cancel out in global totals.
 
-The reference model deliberately uses a simpler representation and selection algorithm, choosing eligible makers by price/arrival instead of reproducing the production container topology. Fixed-seed add/cancel/rejection streams compare outcomes, trades, and full book state for both allocation modes after every step. A seed plus step identifies a reproducible failure.
+The reference model deliberately uses a simpler representation and selection algorithm, choosing eligible makers by price/arrival instead of reproducing the production container topology. Fixed-seed add/cancel/rejection streams compare outcomes, exact rejection reasons, full event order, trades, and full book state for both allocation modes after every step. A seed plus step identifies a reproducible failure.
 
 **Example:** incorrectly advancing a partially filled maker behind its neighbor can preserve aggregates and conservation while violating FIFO. A FIFO test and reference execution comparison catch it. An orphan active index might preserve displayed depth but fail the one-to-one invariant.
 
@@ -99,6 +105,8 @@ The reference model deliberately uses a simpler representation and selection alg
 A producer reads strings and moves them into a bounded deque. The consumer pops in FIFO order and alone owns the matching engine. `push` waits while full; `pop` waits while empty. A mutex protects both the deque and `closed_`. Predicate waits handle spurious wakeups. Closing prevents further pushes, wakes both sides, and allows the consumer to drain already queued items before `pop` returns empty.
 
 **Example:** capacity 1, producer commands A/B/C. After pushing A, pushing B waits until the consumer removes A. Closure after C does not discard C. With a consumer/output error, closing wakes a producer blocked on a full queue before joining it.
+
+Consumer initialization finishes before the producer starts. Otherwise, an engine-construction exception could leave thread destruction joining a producer blocked behind a full queue with no consumer. This order is part of shutdown correctness, even though normal successful runs would conceal the problem.
 
 **C++ ideas:** `unique_lock` permits condition-variable waits to release/reacquire the mutex; `lock_guard` handles simple critical sections; `jthread` supplies lifetime joining; an `exception_ptr` transfers a producer exception after `join` establishes synchronization. `std::move` transfers strings through the queue. Acquire/release visibility comes from mutex lock/unlock, not manually selected atomic memory orders.
 
@@ -144,13 +152,15 @@ External commands are stably sorted by simulated time, preserving input order at
 
 ## 10. Read measurements after correctness
 
-**Problem:** decide whether a change improves the workloads you actually measured. Read [performance.md](performance.md), [benchmark.cpp](../benchmarks/benchmark.cpp), and [run_benchmarks.py](../tools/run_benchmarks.py), then the recorded [native Clang 23 results](../results/native-clang23/summary.md).
+**Problem:** decide whether a change improves the workloads you actually measured. Read [performance.md](performance.md), [benchmark-audit.md](benchmark-audit.md), [benchmark.cpp](../benchmarks/benchmark.cpp), and [run_benchmarks.py](../tools/run_benchmarks.py). The performance document links current measurements; the [original native Clang 23 results](../results/native-clang23/summary.md) remain historical evidence.
 
 The allocation experiment changes only the book resource: ordinary allocation versus an unsynchronized pool. Both modes preserve identical containers and semantics. Trace the three independent passes: batched throughput, individual-request latency, and allocation scan. Understand why event-vector destruction is timed but excluded from book-resource allocation counts, output is excluded, per-request clocks perturb latency, and requested bytes differ from RSS. The counting upstream resource exists only in the untimed allocation pass.
 
+Current schema 2 names throughput `requests_per_second`; historical schema 1 used `events_per_second` for the same input-request metric. Emitted engine events are counted separately. The runner checks Release optimization and absence of sanitizers, requires fresh output directories, preserves partial raw observations, and checks consistency before producing a summary. Source/executable digests improve attribution without proving an arbitrary binary came from a supplied cache.
+
 **Example:** cancellation bursts can reuse pool nodes, while a growing distinct-level book retains many nodes and may pay extra chunk capacity. If p99 rises despite higher throughput, both observations matter. A faster average does not prove a better worst case. Do not infer cache behavior from timing alone; inspect profiler evidence when available.
 
-Use two actual cases as reading exercises. At one million shared-level requests, throughput rose from 2.885 to 5.998 million requests/s and p99 fell from 500 to 200 ns, but peak book-resource bytes rose from 147.19 to 199.16 MiB. At 10,000 large-book requests, throughput improved 1.203× while p99 worsened from 800 to 900 ns. Explain why the project retains the pool as opt-in and keeps the lower-memory baseline default. The Windows host's median back-to-back timer pair was 0 ns and percentiles were quantized in 100 ns increments; explain why this is not evidence that timing is free. Linux `perf` call-stack/counter checks remain unavailable on that host rather than being inferred from these measurements.
+Use two historical cases as reading exercises. In the original native Clang 23 matrix, at one million shared-level requests, throughput rose from 2.885 to 5.998 million requests/s and p99 fell from 500 to 200 ns, but peak book-resource bytes rose from 147.19 to 199.16 MiB. At 10,000 large-book requests, throughput improved 1.203× while p99 worsened from 800 to 900 ns. Explain why the project retains the pool as opt-in and keeps the lower-memory baseline default. That recorded Windows run's median back-to-back timer pair was 0 ns and percentiles were quantized in 100 ns increments; explain why this is not evidence that timing is free. These measurements describe their recorded revision. Current reruns and profiling blockers belong in [performance.md](performance.md) and [verification.md](verification.md).
 
 **Tests:** both allocator modes run fixed-seed reference comparisons. Benchmark passes also check structural invariants and outcome counts. **C++ ideas:** PMR routes allocations at runtime without changing matching containers, a custom resource forwards sizes/alignments, resource lifetime, monotonic clocks, and statistical summaries. **Interview discussion:** formulate a hypothesis, change one cause, preserve the baseline, measure repeat spread, and state platform/instrumentation limits.
 

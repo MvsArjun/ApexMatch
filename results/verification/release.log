@@ -2,8 +2,8 @@ Start testing: Oct 18 21:48 India Standard Time
 ----------------------------------------------------------
 1/4 Testing: core_and_extensions
 1/4 Test: core_and_extensions
-Command: "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_tests.exe"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release
+Command: "<repo>/build/release/apex_tests.exe"
+Directory: <repo>/build/release
 "core_and_extensions" start time: Oct 18 21:48 India Standard Time
 Output:
 ----------------------------------------------------------
@@ -44,8 +44,8 @@ Test Passed.
 
 2/4 Testing: replay
 2/4 Test: replay
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/replay_test.py" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_cli.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/examples"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/replay_test.py" "<repo>/build/release/apex_cli.exe" "<repo>/examples"
+Directory: <repo>/build/release
 "replay" start time: Oct 18 21:48 India Standard Time
 Output:
 ----------------------------------------------------------
@@ -60,8 +60,8 @@ Test Passed.
 
 3/4 Testing: network
 3/4 Test: network
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/network_test.py" "--server" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_server.exe" "--client" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_client.exe"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/network_test.py" "--server" "<repo>/build/release/apex_server.exe" "--client" "<repo>/build/release/apex_client.exe"
+Directory: <repo>/build/release
 "network" start time: Oct 18 21:48 India Standard Time
 Output:
 ----------------------------------------------------------
@@ -76,8 +76,8 @@ Test Passed.
 
 4/4 Testing: extension_examples
 4/4 Test: extension_examples
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/extensions_e2e.py" "--pipeline" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_pipeline.exe" "--twap" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release/apex_twap.exe" "--examples" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/examples"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/release
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/extensions_e2e.py" "--pipeline" "<repo>/build/release/apex_pipeline.exe" "--twap" "<repo>/build/release/apex_twap.exe" "--examples" "<repo>/examples"
+Directory: <repo>/build/release
 "extension_examples" start time: Oct 18 21:48 India Standard Time
 Output:
 ----------------------------------------------------------

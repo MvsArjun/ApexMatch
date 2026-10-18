@@ -1,0 +1,106 @@
+Start testing: Oct 18 22:05 India Standard Time
+----------------------------------------------------------
+1/6 Testing: core_and_extensions
+1/6 Test: core_and_extensions
+Command: "<repo>/build/audit-gcc-release/apex_tests.exe"
+Directory: <repo>/build/audit-gcc-release
+"core_and_extensions" start time: Oct 18 22:05 India Standard Time
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   6.51 sec
+----------------------------------------------------------
+Test Failed.
+"core_and_extensions" end time: Oct 18 22:06 India Standard Time
+"core_and_extensions" time elapsed: 00:00:06
+----------------------------------------------------------
+
+2/6 Testing: replay
+2/6 Test: replay
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/replay_test.py" "<repo>/build/audit-gcc-release/apex_cli.exe" "<repo>/examples"
+Directory: <repo>/build/audit-gcc-release
+"replay" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+Replay golden file, repeatability, stdin, EOF, and oversized-record tests passed.
+<end of output>
+Test time =   2.44 sec
+----------------------------------------------------------
+Test Passed.
+"replay" end time: Oct 18 22:06 India Standard Time
+"replay" time elapsed: 00:00:02
+----------------------------------------------------------
+
+3/6 Testing: network
+3/6 Test: network
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/network_test.py" "--server" "<repo>/build/audit-gcc-release/apex_server.exe" "--client" "<repo>/build/audit-gcc-release/apex_client.exe"
+Directory: <repo>/build/audit-gcc-release
+"network" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+network integration checks passed
+<end of output>
+Test time =   6.26 sec
+----------------------------------------------------------
+Test Passed.
+"network" end time: Oct 18 22:06 India Standard Time
+"network" time elapsed: 00:00:06
+----------------------------------------------------------
+
+4/6 Testing: extension_examples
+4/6 Test: extension_examples
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/extensions_e2e.py" "--pipeline" "<repo>/build/audit-gcc-release/apex_pipeline.exe" "--twap" "<repo>/build/audit-gcc-release/apex_twap.exe" "--examples" "<repo>/examples"
+Directory: <repo>/build/audit-gcc-release
+"extension_examples" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+pipeline and TWAP executable examples passed
+<end of output>
+Test time =   3.38 sec
+----------------------------------------------------------
+Test Passed.
+"extension_examples" end time: Oct 18 22:06 India Standard Time
+"extension_examples" time elapsed: 00:00:03
+----------------------------------------------------------
+
+5/6 Testing: benchmark_tooling
+5/6 Test: benchmark_tooling
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/benchmark_tooling_test.py"
+Directory: <repo>/build/audit-gcc-release
+"benchmark_tooling" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.016s
+
+OK
+<end of output>
+Test time =   0.28 sec
+----------------------------------------------------------
+Test Passed.
+"benchmark_tooling" end time: Oct 18 22:06 India Standard Time
+"benchmark_tooling" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/6 Testing: release_tooling
+6/6 Test: release_tooling
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/release_tooling_test.py"
+Directory: <repo>/build/audit-gcc-release
+"release_tooling" start time: Oct 18 22:06 India Standard Time
+Output:
+----------------------------------------------------------
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 3.545s
+
+OK
+<end of output>
+Test time =   3.77 sec
+----------------------------------------------------------
+Test Passed.
+"release_tooling" end time: Oct 18 22:06 India Standard Time
+"release_tooling" time elapsed: 00:00:03
+----------------------------------------------------------
+
+End testing: Oct 18 22:06 India Standard Time

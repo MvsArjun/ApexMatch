@@ -3,7 +3,9 @@
 from __future__ import annotations
 import argparse
 import datetime as dt
+import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -32,8 +34,17 @@ def main() -> int:
     source, build = args.source.resolve(), args.build_dir.resolve()
     compiler = subprocess.run([args.compiler, "--version"], capture_output=True, text=True, check=True).stdout
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
+    dirty = subprocess.run(["git", "-C", str(source), "status", "--short"], capture_output=True, text=True)
+    source_files = [source / "CMakeLists.txt", source / "CMakePresets.json"]
+    for directory in ("src", "include", "apps", "tests", "benchmarks", "tools"):
+        source_files.extend(path for path in (source / directory).rglob("*")
+                            if path.is_file() and path.suffix in {".cpp", ".hpp", ".py", ".sh"})
     info = {"schema_version": 1, "started_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
             "source_revision": revision.stdout.strip() if revision.returncode == 0 else "archive without Git metadata",
+            "git_status": dirty.stdout.strip() if dirty.returncode == 0 else "unavailable",
+            "source_sha256": {path.relative_to(source).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+                              for path in sorted(source_files) if path.exists()},
+            "sanitizer_environment": {key: os.environ.get(key) for key in ("ASAN_OPTIONS", "UBSAN_OPTIONS", "TSAN_OPTIONS")},
             "compiler": redact(compiler, root), "configuration": args.config, "sanitizer": args.sanitizer,
             "commands": [], "result": "incomplete"}
     commands = [
@@ -43,7 +54,7 @@ def main() -> int:
                        "-DAPEX_TSAN=" + ("ON" if args.sanitizer == "thread" else "OFF"),
                        "-DAPEX_BUILD_BENCHMARKS=" + ("ON" if args.sanitizer == "none" else "OFF")]),
         ("build", ["cmake", "--build", str(build), "--parallel", str(args.parallel)]),
-        ("test", ["ctest", "--test-dir", str(build), "--output-on-failure", "--output-junit", str(build / "audit-junit.xml")]),
+        ("test", ["ctest", "--test-dir", str(build), "--no-tests=error", "--output-on-failure", "--output-junit", str(build / "audit-junit.xml")]),
     ]
     status = 0
     for stage, command in commands:
@@ -56,7 +67,7 @@ def main() -> int:
             info["result"] = "failed: " + stage
             status = 1
             break
-    if status == 0:
+    if any(command["stage"] == "test" for command in info["commands"]) and (build / "audit-junit.xml").exists():
         junit_text = (build / "audit-junit.xml").read_text(encoding="utf-8")
         suite = ET.fromstring(junit_text)
         info["ctest"] = {key: int(suite.attrib.get(key, 0)) for key in ("tests", "failures", "disabled")}
@@ -66,8 +77,9 @@ def main() -> int:
         count = re.search(r"All tests passed \((\d+) named cases\)", details)
         info["named_cpp_cases"] = int(count[1]) if count else None
         info["python_unittest_cases"] = sum(map(int, re.findall(r"Ran (\d+) tests? in", details)))
-        info["result"] = "passed"
-        print(f"Passed {info['ctest']['tests']} CTest groups; {info['named_cpp_cases']} named C++ and {info['python_unittest_cases']} Python tooling cases", flush=True)
+        if status == 0:
+            info["result"] = "passed"
+            print(f"Passed {info['ctest']['tests']} CTest groups; {info['named_cpp_cases']} named C++ and {info['python_unittest_cases']} Python tooling cases", flush=True)
     info["finished_utc"] = dt.datetime.now(dt.timezone.utc).isoformat()
     (output / "result.json").write_text(json.dumps(info, indent=2) + "\n", encoding="utf-8")
     return status

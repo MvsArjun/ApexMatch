@@ -1,0 +1,22 @@
+Test project <repo>/build/audit-gcc-debug
+    Start 1: core_and_extensions
+1/6 Test #1: core_and_extensions ..............***Exception: SegFault  5.56 sec
+
+    Start 2: replay
+2/6 Test #2: replay ...........................   Passed    3.91 sec
+    Start 3: network
+3/6 Test #3: network ..........................   Passed    5.03 sec
+    Start 4: extension_examples
+4/6 Test #4: extension_examples ...............   Passed    6.89 sec
+    Start 5: benchmark_tooling
+5/6 Test #5: benchmark_tooling ................   Passed    0.24 sec
+    Start 6: release_tooling
+6/6 Test #6: release_tooling ..................   Passed    5.50 sec
+
+83% tests passed, 1 tests failed out of 6
+
+Total Test time (real) =  27.16 sec
+
+The following tests FAILED:
+	  1 - core_and_extensions (SEGFAULT)
+Errors while running CTest

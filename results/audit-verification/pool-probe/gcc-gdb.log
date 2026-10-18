@@ -1,0 +1,11 @@
+[New Thread 6752.0x2844 (id 2)]
+
+Thread 1 received signal SIGSEGV, Segmentation fault.
+0x00007ff613bcf6a9 in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long long, unsigned long long) ()
+#0  0x00007ff613bcf6a9 in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long long, unsigned long long) ()
+#1  0x00007ff613bce6c7 in std::pmr::memory_resource::allocate (this=0x5ff9b0, __bytes=16, __alignment=8) at <home>/.codex/tools/w64devkit/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/bits/memory_resource.h:79
+#2  0x00007ff613b3154b in main () at tools/repro_pool_failure.cpp:29
+upstream allocate 528 alignment 8 remaining 2
+upstream allocate 1016 alignment 16 remaining 1
+upstream allocate 192 alignment 8 remaining 0
+upstream deallocate 1016

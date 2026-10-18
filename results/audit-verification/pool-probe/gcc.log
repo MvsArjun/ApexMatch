@@ -1,0 +1,4 @@
+upstream allocate 528 alignment 8 remaining 2
+upstream allocate 1016 alignment 16 remaining 1
+upstream allocate 192 alignment 8 remaining 0
+upstream deallocate 1016

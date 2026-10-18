@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="6"
+	failures="1"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="22"
+	timestamp="2026-10-18T22:05:53"
+	>
+	<testcase name="core_and_extensions" classname="core_and_extensions" time="6.50789" status="fail">
+		<failure message="SEGFAULT"/>
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="replay" classname="replay" time="2.43923" status="run">
+		<properties/>
+		<system-out>Replay golden file, repeatability, stdin, EOF, and oversized-record tests passed.
+</system-out>
+	</testcase>
+	<testcase name="network" classname="network" time="6.2557" status="run">
+		<properties/>
+		<system-out>network integration checks passed
+</system-out>
+	</testcase>
+	<testcase name="extension_examples" classname="extension_examples" time="3.37975" status="run">
+		<properties/>
+		<system-out>pipeline and TWAP executable examples passed
+</system-out>
+	</testcase>
+	<testcase name="benchmark_tooling" classname="benchmark_tooling" time="0.280118" status="run">
+		<properties/>
+		<system-out>........
+----------------------------------------------------------------------
+Ran 8 tests in 0.016s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="release_tooling" classname="release_tooling" time="3.77143" status="run">
+		<properties/>
+		<system-out>.....
+----------------------------------------------------------------------
+Ran 5 tests in 3.545s
+
+OK
+</system-out>
+	</testcase>
+</testsuite>

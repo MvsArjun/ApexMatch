@@ -2,8 +2,8 @@ Start testing: Oct 18 21:40 India Standard Time
 ----------------------------------------------------------
 1/3 Testing: core_and_extensions
 1/3 Test: core_and_extensions
-Command: "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_tests.exe"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+Command: "<repo>/build/asan/apex_tests.exe"
+Directory: <repo>/build/asan
 "core_and_extensions" start time: Oct 18 21:40 India Standard Time
 Output:
 ----------------------------------------------------------
@@ -44,8 +44,8 @@ Test Passed.
 
 2/3 Testing: replay
 2/3 Test: replay
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/replay_test.py" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_cli.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/examples"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/replay_test.py" "<repo>/build/asan/apex_cli.exe" "<repo>/examples"
+Directory: <repo>/build/asan
 "replay" start time: Oct 18 21:41 India Standard Time
 Output:
 ----------------------------------------------------------
@@ -60,8 +60,8 @@ Test Passed.
 
 3/3 Testing: network
 3/3 Test: network
-Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/network_test.py" "--server" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_server.exe" "--client" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_client.exe"
-Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+Command: "<home>/AppData/Local/Programs/Python/Python312/python.exe" "<repo>/tests/network_test.py" "--server" "<repo>/build/asan/apex_server.exe" "--client" "<repo>/build/asan/apex_client.exe"
+Directory: <repo>/build/asan
 "network" start time: Oct 18 21:41 India Standard Time
 Output:
 ----------------------------------------------------------

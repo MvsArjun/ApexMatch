@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="6"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="21"
+	timestamp="2026-10-18T22:06:01"
+	>
+	<testcase name="core_and_extensions" classname="core_and_extensions" time="9.29577" status="run">
+		<properties/>
+		<system-out>[PASS] empty and single-order books
+[PASS] single buy/sell fills at maker price
+[PASS] non-crossing orders and ordered depth
+[PASS] better price precedes older order
+[PASS] FIFO partial maker retains priority
+[PASS] multi-order multi-level sweep and taker residual
+[PASS] cancellation lifecycle and middle FIFO removal
+[PASS] duplicate IDs, completed IDs, and rejected ID reuse
+[PASS] invalid requests preserve the book
+[PASS] int64 and uint64 arithmetic boundaries
+[PASS] typed enum and allocator argument validation
+[PASS] sequence capacity preflight boundaries
+[PASS] allocation failure safely destroys baseline and pool books
+[PASS] precise deterministic event order and sequences
+[PASS] strict parser malformed and out-of-range input
+[PASS] query sequencing and JSON escaping
+[PASS] deterministic replay and allocator equivalence
+[PASS] reference baseline seed 0
+[PASS] reference baseline seed 42
+[PASS] reference baseline seed 20261018
+[PASS] reference baseline seed 729704103918
+[PASS] reference pool seed 0
+[PASS] re...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="replay" classname="replay" time="2.16156" status="run">
+		<properties/>
+		<system-out>Replay golden file, repeatability, stdin, EOF, and oversized-record tests passed.
+</system-out>
+	</testcase>
+	<testcase name="network" classname="network" time="3.0449" status="run">
+		<properties/>
+		<system-out>network integration checks passed
+</system-out>
+	</testcase>
+	<testcase name="extension_examples" classname="extension_examples" time="4.31009" status="run">
+		<properties/>
+		<system-out>pipeline and TWAP executable examples passed
+</system-out>
+	</testcase>
+	<testcase name="benchmark_tooling" classname="benchmark_tooling" time="0.307507" status="run">
+		<properties/>
+		<system-out>........
+----------------------------------------------------------------------
+Ran 8 tests in 0.013s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="release_tooling" classname="release_tooling" time="2.26257" status="run">
+		<properties/>
+		<system-out>.....
+----------------------------------------------------------------------
+Ran 5 tests in 2.048s
+
+OK
+</system-out>
+	</testcase>
+</testsuite>

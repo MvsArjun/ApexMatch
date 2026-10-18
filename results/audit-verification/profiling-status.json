@@ -1,0 +1,8 @@
+{
+  "linux_perf": "unavailable: no Linux/WSL kernel",
+  "wpr_before": "not recording",
+  "wpr_attempt": "wpr -start CPU -filemode",
+  "wpr_error": "0xc5585011: Failed to enable the policy to profile system performance",
+  "wpr_after": "not recording",
+  "cpu_samples_collected": false
+}

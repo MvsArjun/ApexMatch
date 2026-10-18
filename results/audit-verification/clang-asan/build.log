@@ -1,0 +1,19 @@
+[1/19] Building CXX object CMakeFiles/apexmatch.dir/src/protocol.cpp.obj
+[2/19] Building CXX object CMakeFiles/apex_cli.dir/apps/cli.cpp.obj
+[3/19] Building CXX object CMakeFiles/apexmatch.dir/src/engine.cpp.obj
+[4/19] Linking CXX static library libapexmatch.a
+[5/19] Building CXX object CMakeFiles/apex_pipeline.dir/apps/pipeline.cpp.obj
+[6/19] Building CXX object CMakeFiles/apex_server.dir/apps/server.cpp.obj
+[7/19] Building CXX object CMakeFiles/apex_extensions.dir/src/extensions.cpp.obj
+[8/19] Building CXX object CMakeFiles/apex_client.dir/apps/client.cpp.obj
+[9/19] Building CXX object CMakeFiles/apex_tests.dir/tests/test_main.cpp.obj
+[10/19] Building CXX object CMakeFiles/apex_twap.dir/apps/twap.cpp.obj
+[11/19] Linking CXX static library libapex_extensions.a
+[12/19] Linking CXX executable apex_cli.exe
+[13/19] Linking CXX executable apex_pipeline.exe
+[14/19] Linking CXX executable apex_server.exe
+[15/19] Building CXX object CMakeFiles/apex_tests.dir/tests/core_tests.cpp.obj
+[16/19] Linking CXX executable apex_client.exe
+[17/19] Building CXX object CMakeFiles/apex_tests.dir/tests/extensions_tests.cpp.obj
+[18/19] Linking CXX executable apex_twap.exe
+[19/19] Linking CXX executable apex_tests.exe

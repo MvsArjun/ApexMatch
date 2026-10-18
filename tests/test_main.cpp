@@ -5,6 +5,8 @@
 void run_core_tests();
 void run_extension_tests();
 int main() {
+    // Preserve the last completed case when a platform runtime terminates abruptly.
+    std::cout << std::unitbuf;
     try {
         run_core_tests();
         run_extension_tests();
