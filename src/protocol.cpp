@@ -2,6 +2,7 @@
 #include <charconv>
 #include <locale>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <system_error>
 
@@ -70,8 +71,9 @@ ProcessResult apply_command(MatchingEngine& engine, const Command& command) {
     case CommandKind::Add: return engine.add(command.id, command.side, command.price, command.quantity);
     case CommandKind::Cancel: return engine.cancel(command.id);
     case CommandKind::Invalid: return engine.reject(command.error);
-    default: return {};
+    case CommandKind::Book: case CommandKind::Stats: case CommandKind::Ignore: return {};
     }
+    throw std::invalid_argument("invalid command kind");
 }
 std::string process_line(MatchingEngine& engine, std::string_view line, std::size_t depth) {
     auto command = parse_command(line);
@@ -85,8 +87,10 @@ std::string process_line(MatchingEngine& engine, std::string_view line, std::siz
 }
 std::string event_json(const OrderEvent& event) {
     static constexpr const char* names[]{"accepted", "rejected", "execution", "cancelled", "book_update"};
+    const auto kind = static_cast<unsigned>(event.kind);
+    if (kind >= sizeof(names) / sizeof(names[0])) throw std::invalid_argument("invalid event kind");
     std::ostringstream out; out.imbue(std::locale::classic());
-    out << "{\"type\":\"" << names[static_cast<unsigned>(event.kind)] << "\",\"request_sequence\":" << event.request_sequence
+    out << "{\"type\":\"" << names[kind] << "\",\"request_sequence\":" << event.request_sequence
         << ",\"event_sequence\":" << event.event_sequence;
     switch (event.kind) {
     case EventKind::Accepted: case EventKind::Cancelled:

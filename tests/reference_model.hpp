@@ -16,13 +16,18 @@ public:
 
     ProcessResult add(OrderId id, Side side, Price price, Quantity quantity) {
         ++statistics.requests;
-        if (id == 0 || (side != Side::Buy && side != Side::Sell) || price <= 0 || quantity <= 0 ||
-            seen_.contains(id) ||
-            (quantity > 0 && static_cast<std::uint64_t>(quantity) >
-             std::numeric_limits<std::uint64_t>::max() - statistics.submitted_quantity)) {
+        std::string reason;
+        if (id == 0) reason = "invalid_id";
+        else if (side != Side::Buy && side != Side::Sell) reason = "invalid_side";
+        else if (price <= 0) reason = "invalid_price";
+        else if (quantity <= 0) reason = "invalid_quantity";
+        else if (seen_.contains(id)) reason = "duplicate_id";
+        else if (static_cast<std::uint64_t>(quantity) > std::numeric_limits<std::uint64_t>::max() - statistics.submitted_quantity)
+            reason = "quantity_overflow";
+        if (!reason.empty()) {
             ++statistics.rejected;
             ProcessResult rejected;
-            emit(rejected, OrderEvent{.kind = EventKind::Rejected, .order_id = id, .reason = {}});
+            emit(rejected, OrderEvent{.kind = EventKind::Rejected, .order_id = id, .reason = reason});
             return rejected;
         }
         seen_.insert(id);
@@ -70,7 +75,8 @@ public:
         if (item == orders.end()) {
             ++statistics.rejected;
             ProcessResult rejected;
-            emit(rejected, OrderEvent{.kind = EventKind::Rejected, .order_id = id, .reason = {}});
+            emit(rejected, OrderEvent{.kind = EventKind::Rejected, .order_id = id,
+                                      .reason = id == 0 ? "invalid_id" : "inactive_order"});
             return rejected;
         }
         const Order cancelled = *item;

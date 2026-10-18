@@ -17,6 +17,8 @@ using Price = std::int64_t;
 using Quantity = std::int64_t;
 enum class Side { Buy, Sell };
 enum class AllocationMode { Baseline, Pool };
+// Typed query/serialization APIs throw invalid_argument for unknown enum values.
+// Order submission instead reports an invalid Side as a normal rejection event.
 const char* side_name(Side side);
 struct Order { OrderId id{}; Side side{}; Price price{}; Quantity remaining{}; Sequence arrival{}; };
 struct Trade { Sequence execution_sequence{}; OrderId buy_id{}, sell_id{}; Price price{}; Quantity quantity{}; bool operator==(const Trade&) const = default; };

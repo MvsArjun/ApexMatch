@@ -1,4 +1,5 @@
 #include "apexmatch/engine.hpp"
+#include "sequence_capacity.hpp"
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
@@ -9,8 +10,21 @@ std::pmr::memory_resource* checked_resource(std::pmr::memory_resource* resource)
     if (!resource) throw std::invalid_argument("null upstream memory resource");
     return resource;
 }
+bool pooled_allocation(AllocationMode mode) {
+    switch (mode) {
+    case AllocationMode::Baseline: return false;
+    case AllocationMode::Pool: return true;
+    }
+    throw std::invalid_argument("invalid allocation mode");
 }
-const char* side_name(Side side) { return side == Side::Buy ? "BUY" : "SELL"; }
+}
+const char* side_name(Side side) {
+    switch (side) {
+    case Side::Buy: return "BUY";
+    case Side::Sell: return "SELL";
+    }
+    throw std::invalid_argument("invalid side");
+}
 std::string OrderValidator::validate(OrderId id, Side side, Price price, Quantity quantity) {
     if (id == 0) return "invalid_id";
     if (side != Side::Buy && side != Side::Sell) return "invalid_side";
@@ -19,7 +33,7 @@ std::string OrderValidator::validate(OrderId id, Side side, Price price, Quantit
     return {};
 }
 OrderBook::OrderBook(AllocationMode mode, std::pmr::memory_resource* upstream)
-    : pool_(mode == AllocationMode::Pool ? std::make_unique<std::pmr::unsynchronized_pool_resource>(checked_resource(upstream)) : nullptr),
+    : pool_(pooled_allocation(mode) ? std::make_unique<std::pmr::unsynchronized_pool_resource>(checked_resource(upstream)) : nullptr),
       resource_(pool_ ? static_cast<std::pmr::memory_resource*>(pool_.get()) : checked_resource(upstream)),
       bids_(resource_), asks_(resource_), active_(resource_), seen_(resource_) {}
 std::optional<DepthLevel> OrderBook::best_bid() const {
@@ -41,6 +55,7 @@ Depth OrderBook::depth(std::size_t count) const {
     return result;
 }
 std::uint64_t OrderBook::quantity_at(Side side, Price price) const {
+    if (side != Side::Buy && side != Side::Sell) throw std::invalid_argument("invalid side");
     const auto& levels = side == Side::Buy ? bids_ : asks_;
     auto it = levels.find(price);
     return it == levels.end() ? 0 : it->second.quantity;
@@ -88,12 +103,8 @@ void OrderBook::check_invariants() const {
 }
 void MatchingEngine::begin_request() {
     // Reserve enough sequence space for the worst case before changing any state.
-    constexpr auto maximum = std::numeric_limits<Sequence>::max();
-    if (stats_.requests == maximum || book_.active_.size() > (maximum - 3) / 2)
-        throw std::overflow_error("request sequence exhausted");
-    const auto required = static_cast<Sequence>(book_.active_.size()) * 2 + 3;
-    if (event_sequence_ > maximum - required || execution_sequence_ > maximum - book_.active_.size())
-        throw std::overflow_error("event or execution sequence exhausted");
+    if (!detail::sequence_capacity_available(stats_.requests, event_sequence_, execution_sequence_, book_.active_.size()))
+        throw std::overflow_error("request, event or execution sequence exhausted");
     ++stats_.requests;
 }
 void MatchingEngine::emit(ProcessResult& result, OrderEvent event) {

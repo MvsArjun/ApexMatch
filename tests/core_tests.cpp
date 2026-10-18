@@ -2,6 +2,7 @@
 #include "apexmatch/protocol.hpp"
 #include "reference_model.hpp"
 #include "test_support.hpp"
+#include "../src/sequence_capacity.hpp"
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -50,6 +51,7 @@ void compare_events(const ProcessResult& actual, const ProcessResult& expected) 
         case EventKind::Rejected:
             REQUIRE(a.order_id == e.order_id);
             REQUIRE(!a.reason.empty());
+            REQUIRE(a.reason == e.reason);
             break;
         case EventKind::Execution:
             REQUIRE(a.trade == e.trade);
@@ -278,6 +280,104 @@ void arithmetic_boundaries() {
     REQUIRE(!crossing.add(4, Side::Sell, 1, 1).accepted);
     crossing.check_invariants();
 }
+void typed_enum_validation() {
+    const auto invalid_argument = [](const auto& operation) {
+        bool caught = false;
+        try { operation(); } catch (const std::invalid_argument&) { caught = true; }
+        REQUIRE(caught);
+    };
+    MatchingEngine engine;
+    engine.add(1, Side::Sell, 100, 7);
+    const auto before = engine.book().depth(10);
+    const auto statistics = engine.stats();
+    for (const int value : {-1, 2, 99}) {
+        const auto side = static_cast<Side>(value);
+        invalid_argument([&] { (void)side_name(side); });
+        invalid_argument([&] { (void)engine.book().quantity_at(side, 100); });
+        for (const auto kind : {EventKind::Accepted, EventKind::Cancelled, EventKind::BookUpdate}) {
+            OrderEvent event;
+            event.kind = kind;
+            event.side = side;
+            invalid_argument([&] { (void)event_json(event); });
+        }
+        invalid_argument([&] { MatchingEngine invalid(static_cast<AllocationMode>(value)); });
+    }
+    for (const int value : {-1, 5, 99}) {
+        OrderEvent event;
+        event.kind = static_cast<EventKind>(value);
+        invalid_argument([&] { (void)event_json(event); });
+    }
+    for (const int value : {-1, 6, 99}) {
+        Command command;
+        command.kind = static_cast<CommandKind>(value);
+        invalid_argument([&] { (void)apply_command(engine, command); });
+    }
+    invalid_argument([] { MatchingEngine invalid(AllocationMode::Baseline, nullptr); });
+    invalid_argument([] { MatchingEngine invalid(AllocationMode::Pool, nullptr); });
+    REQUIRE(engine.book().depth(10) == before);
+    compare_statistics(engine.stats(), statistics);
+    engine.check_invariants();
+}
+void sequence_capacity_boundaries() {
+    constexpr auto maximum = std::numeric_limits<Sequence>::max();
+    using detail::sequence_capacity_available;
+    REQUIRE(sequence_capacity_available(0, 0, 0, 0));
+    REQUIRE(sequence_capacity_available(maximum - 1, maximum - 3, maximum, 0));
+    REQUIRE(!sequence_capacity_available(maximum, 0, 0, 0));
+    REQUIRE(!sequence_capacity_available(0, maximum - 2, 0, 0));
+    REQUIRE(sequence_capacity_available(0, maximum - 7, maximum - 2, 2));
+    REQUIRE(!sequence_capacity_available(0, maximum - 6, maximum - 2, 2));
+    REQUIRE(!sequence_capacity_available(0, maximum - 7, maximum - 1, 2));
+    if constexpr (std::numeric_limits<std::size_t>::max() >= maximum) {
+        const auto largest_active = static_cast<std::size_t>((maximum - 3) / 2);
+        REQUIRE(sequence_capacity_available(0, 0, 0, largest_active));
+        REQUIRE(!sequence_capacity_available(0, 0, 0, largest_active + 1));
+    }
+}
+class FailingResource final : public std::pmr::memory_resource {
+public:
+    explicit FailingResource(std::size_t allowed) : remaining_(allowed) {}
+    std::size_t outstanding_bytes{};
+private:
+    void* do_allocate(std::size_t bytes, std::size_t alignment) override {
+        if (remaining_ == 0) throw std::bad_alloc();
+        --remaining_;
+        void* memory = std::pmr::new_delete_resource()->allocate(bytes, alignment);
+        outstanding_bytes += bytes;
+        return memory;
+    }
+    void do_deallocate(void* memory, std::size_t bytes, std::size_t alignment) override {
+        std::pmr::new_delete_resource()->deallocate(memory, bytes, alignment);
+        outstanding_bytes -= bytes;
+    }
+    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override { return this == &other; }
+    std::size_t remaining_;
+};
+void allocation_failure_destruction() {
+    for (const auto mode : {AllocationMode::Baseline, AllocationMode::Pool}) {
+        std::size_t failures = 0, successes = 0;
+        for (std::size_t allowance = 0; allowance < 64; ++allowance) {
+            FailingResource resource(allowance);
+            try {
+                MatchingEngine engine(mode, &resource);
+                engine.add(1, Side::Sell, 100, 5);
+                engine.add(2, Side::Sell, 100, 7);
+                engine.add(3, Side::Sell, 101, 9);
+                engine.add(4, Side::Buy, 101, 15);
+                engine.add(5, Side::Buy, 99, 8);
+                engine.cancel(3);
+                engine.check_invariants();
+                ++successes;
+            } catch (const std::bad_alloc&) {
+                // Fatal-session contract: destroy; never resume a partially changed engine.
+                ++failures;
+            }
+            REQUIRE(resource.outstanding_bytes == 0);
+        }
+        REQUIRE(failures > 0);
+        REQUIRE(successes > 0);
+    }
+}
 void exact_event_order_and_sequence() {
     MatchingEngine engine;
     engine.add(1, Side::Sell, 100, 2);
@@ -462,6 +562,9 @@ void run_core_tests() {
     test::run("duplicate IDs, completed IDs, and rejected ID reuse", duplicates_and_rejected_id_reuse);
     test::run("invalid requests preserve the book", invalid_values_do_not_mutate_book);
     test::run("int64 and uint64 arithmetic boundaries", arithmetic_boundaries);
+    test::run("typed enum and allocator argument validation", typed_enum_validation);
+    test::run("sequence capacity preflight boundaries", sequence_capacity_boundaries);
+    test::run("allocation failure safely destroys baseline and pool books", allocation_failure_destruction);
     test::run("precise deterministic event order and sequences", exact_event_order_and_sequence);
     test::run("strict parser malformed and out-of-range input", strict_parser_boundaries);
     test::run("query sequencing and JSON escaping", queries_rejections_and_json_escaping);
