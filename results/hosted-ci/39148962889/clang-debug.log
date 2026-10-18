@@ -1,0 +1,35 @@
+Test project <repo>/build/debug
+    Start 1: core_and_extensions
+1/6 Test #1: core_and_extensions ..............***Exception: SegFault  0.19 sec
+[PASS] empty and single-order books
+[PASS] single buy/sell fills at maker price
+[PASS] non-crossing orders and ordered depth
+[PASS] better price precedes older order
+[PASS] FIFO partial maker retains priority
+[PASS] multi-order multi-level sweep and taker residual
+[PASS] cancellation lifecycle and middle FIFO removal
+[PASS] duplicate IDs, completed IDs, and rejected ID reuse
+[PASS] invalid requests preserve the book
+[PASS] int64 and uint64 arithmetic boundaries
+[PASS] typed enum and allocator argument validation
+[PASS] sequence capacity preflight boundaries
+
+    Start 2: replay
+2/6 Test #2: replay ...........................   Passed    0.04 sec
+    Start 3: network
+3/6 Test #3: network ..........................   Passed    0.16 sec
+    Start 4: extension_examples
+4/6 Test #4: extension_examples ...............   Passed    0.05 sec
+    Start 5: benchmark_tooling
+5/6 Test #5: benchmark_tooling ................   Passed    0.06 sec
+    Start 6: release_tooling
+6/6 Test #6: release_tooling ..................   Passed    0.14 sec
+
+83% tests passed, 1 tests failed out of 6
+
+Total Test time (real) =   0.69 sec
+
+The following tests FAILED:
+	  1 - core_and_extensions (SEGFAULT)
+Errors while running CTest
+##[error]Process completed with exit code 8.

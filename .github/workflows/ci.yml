@@ -1,5 +1,10 @@
 name: build-and-verify
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore: ['**.md', 'results/**']
+  pull_request:
+    paths-ignore: ['**.md', 'results/**']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
@@ -17,6 +22,11 @@ jobs:
       - run: cmake --preset ${{ matrix.preset }} -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
       - run: cmake --build --preset ${{ matrix.preset }} --parallel 2
       - run: ctest --preset ${{ matrix.preset }}
+      - name: Isolate a failed standard-library allocation path
+        if: failure()
+        run: |
+          ${{ matrix.compiler }} -std=c++20 -g tools/repro_pool_failure.cpp -o build/pool-probe
+          ./build/pool-probe
   thread-sanitizer:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -28,3 +38,39 @@ jobs:
       - run: cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++
       - run: cmake --build --preset tsan --parallel 2
       - run: ctest --preset tsan
+      - name: Isolate a failed standard-library allocation path
+        if: failure()
+        run: |
+          clang++ -std=c++20 -g tools/repro_pool_failure.cpp -o build/pool-probe
+          ./build/pool-probe
+  libcxx:
+    name: Clang 21 libc++ (${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [debug, release, asan, tsan]
+    steps:
+      - uses: actions/checkout@v4
+      # libc++ 20+ provides std::jthread without experimental-library flags.
+      # Keep the original libstdc++ matrix above, including its failing regression.
+      - name: Install the LLVM 21 compiler and standard library
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl gnupg cmake ninja-build python3
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/apexmatch-llvm.gpg >/dev/null
+          echo 'deb [signed-by=/usr/share/keyrings/apexmatch-llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main' | sudo tee /etc/apt/sources.list.d/apexmatch-llvm.list
+          sudo apt-get update
+          sudo apt-get install -y clang-21 libc++-21-dev libc++abi-21-dev
+      - name: Configure TSan shadow-memory layout
+        if: matrix.preset == 'tsan'
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - run: cmake --preset ${{ matrix.preset }} -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
+      - run: cmake --build --preset ${{ matrix.preset }} --parallel 2
+      - run: ctest --preset ${{ matrix.preset }}
+      - name: Verify standard-library allocation failure propagation
+        if: always()
+        run: |
+          clang++-21 -std=c++20 -stdlib=libc++ tools/repro_pool_failure.cpp -o build/pool-probe
+          ./build/pool-probe

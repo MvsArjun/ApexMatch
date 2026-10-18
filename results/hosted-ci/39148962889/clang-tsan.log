@@ -1,0 +1,66 @@
+Test project <repo>/build/tsan
+    Start 1: core_and_extensions
+1/6 Test #1: core_and_extensions ..............***Failed    0.28 sec
+[PASS] empty and single-order books
+[PASS] single buy/sell fills at maker price
+[PASS] non-crossing orders and ordered depth
+[PASS] better price precedes older order
+[PASS] FIFO partial maker retains priority
+[PASS] multi-order multi-level sweep and taker residual
+[PASS] cancellation lifecycle and middle FIFO removal
+[PASS] duplicate IDs, completed IDs, and rejected ID reuse
+[PASS] invalid requests preserve the book
+[PASS] int64 and uint64 arithmetic boundaries
+[PASS] typed enum and allocator argument validation
+[PASS] sequence capacity preflight boundaries
+ThreadSanitizer:DEADLYSIGNAL
+==2878==ERROR: ThreadSanitizer: SEGV on unknown address 0x0017fffffff0 (pc 0x7f41aabb7945 bp 0x7ffe5d6f1120 sp 0x7ffe5d6f10f0 T2878)
+==2878==The signal is caused by a READ memory access.
+    #0 std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long) <null> (libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b)
+    #1 std::pmr::memory_resource::allocate(unsigned long, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:76:38 (apex_tests+0x103276) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #2 std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>::allocate(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:162:40 (apex_tests+0x166610) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #3 std::allocator_traits<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::allocate(std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>&, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:448:20 (apex_tests+0x166505) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #4 std::__detail::_Hash_node<unsigned long, false>* std::__detail::_Hashtable_alloc<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::_M_allocate_node<unsigned long const&>(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:2019:16 (apex_tests+0x1663c3) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #5 std::__detail::_Hash_node<unsigned long, false>* std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::operator()<unsigned long const&>(unsigned long const&) const /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:254:16 (apex_tests+0x166345) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #6 std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::__node_ptr std::__detail::_NodeBuilder<std::__detail::_Identity>::_S_build<unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:173:11 (apex_tests+0x165e01) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #7 std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert_unique<unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:2333:4 (apex_tests+0x165b9d) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #8 std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert_unique_aux<unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:944:11 (apex_tests+0x165938) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #9 std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert<unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&, std::integral_constant<bool, true>) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:956:11 (apex_tests+0x16587c) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #10 std::__detail::_Insert_base<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::insert(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:958:13 (apex_tests+0x16575a) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #11 std::unordered_set<unsigned long, std::hash<unsigned long>, std::equal_to<unsigned long>, std::pmr::polymorphic_allocator<unsigned long>>::insert(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/unordered_set.h:429:21 (apex_tests+0x161d35) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #12 apexmatch::MatchingEngine::add(unsigned long, apexmatch::Side, long, long) <repo>/src/engine.cpp:140:17 (apex_tests+0x15d730) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #13 (anonymous namespace)::allocation_failure_destruction() <repo>/tests/core_tests.cpp:363:24 (apex_tests+0xed5d8) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #14 void std::__invoke_impl<void, void (*&)()>(std::__invoke_other, void (*&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/invoke.h:61:14 (apex_tests+0x106a12) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #15 std::enable_if<is_invocable_r_v<void, void (*&)()>, void>::type std::__invoke_r<void, void (*&)()>(void (*&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/invoke.h:111:2 (apex_tests+0x106965) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #16 std::_Function_handler<void (), void (*)()>::_M_invoke(std::_Any_data const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/std_function.h:290:9 (apex_tests+0x1067bd) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #17 std::function<void ()>::operator()() const /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/std_function.h:591:9 (apex_tests+0xfa827) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #18 apexmatch::test::run(char const*, std::function<void ()> const&) <repo>/tests/test_support.hpp:16:11 (apex_tests+0xf9f80) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #19 run_core_tests() <repo>/tests/core_tests.cpp:567:5 (apex_tests+0xe86cc) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #20 main <repo>/tests/test_main.cpp:11:9 (apex_tests+0xe80a4) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+    #21 <null> <null> (libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #22 __libc_start_main <null> (libc.so.6+0x2a28a) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #23 _start <null> (apex_tests+0x36964) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+
+ThreadSanitizer can not provide additional info.
+SUMMARY: ThreadSanitizer: SEGV (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b) in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long)
+==2878==ABORTING
+
+    Start 2: replay
+2/6 Test #2: replay ...........................   Passed    0.13 sec
+    Start 3: network
+3/6 Test #3: network ..........................   Passed    0.48 sec
+    Start 4: extension_examples
+4/6 Test #4: extension_examples ...............   Passed    0.17 sec
+    Start 5: benchmark_tooling
+5/6 Test #5: benchmark_tooling ................   Passed    0.09 sec
+    Start 6: release_tooling
+6/6 Test #6: release_tooling ..................   Passed    0.11 sec
+
+83% tests passed, 1 tests failed out of 6
+
+Total Test time (real) =   1.32 sec
+
+The following tests FAILED:
+	  1 - core_and_extensions (Failed)
+Errors while running CTest
+##[error]Process completed with exit code 8.

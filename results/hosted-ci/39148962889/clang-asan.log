@@ -1,0 +1,67 @@
+Test project <repo>/build/asan
+    Start 1: core_and_extensions
+1/6 Test #1: core_and_extensions ..............***Failed    0.29 sec
+[PASS] empty and single-order books
+[PASS] single buy/sell fills at maker price
+[PASS] non-crossing orders and ordered depth
+[PASS] better price precedes older order
+[PASS] FIFO partial maker retains priority
+[PASS] multi-order multi-level sweep and taker residual
+[PASS] cancellation lifecycle and middle FIFO removal
+[PASS] duplicate IDs, completed IDs, and rejected ID reuse
+[PASS] invalid requests preserve the book
+[PASS] int64 and uint64 arithmetic boundaries
+[PASS] typed enum and allocator argument validation
+[PASS] sequence capacity preflight boundaries
+AddressSanitizer:DEADLYSIGNAL
+=================================================================
+==2681==ERROR: AddressSanitizer: SEGV on unknown address 0x0017fffffff0 (pc 0x7f6875bb7945 bp 0x7ffd744655a0 sp 0x7ffd74465570 T0)
+==2681==The signal is caused by a READ memory access.
+    #0 0x7f6875bb7945 in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long) (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b)
+    #1 0x55a2a31bd143 in std::pmr::memory_resource::allocate(unsigned long, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:76:38
+    #2 0x55a2a32c5855 in std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>::allocate(unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:162:40
+    #3 0x55a2a32c55fa in std::allocator_traits<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::allocate(std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>&, unsigned long) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/memory_resource.h:448:20
+    #4 0x55a2a32c533c in std::__detail::_Hash_node<unsigned long, false>* std::__detail::_Hashtable_alloc<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::_M_allocate_node<unsigned long const&>(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:2019:16
+    #5 0x55a2a32c5269 in std::__detail::_Hash_node<unsigned long, false>* std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::operator()<unsigned long const&>(unsigned long const&) const /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:254:16
+    #6 0x55a2a32c4470 in std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>::__node_ptr std::__detail::_NodeBuilder<std::__detail::_Identity>::_S_build<unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:173:11
+    #7 0x55a2a32c3ed2 in std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert_unique<unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:2333:4
+    #8 0x55a2a32c37c2 in std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert_unique_aux<unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:944:11
+    #9 0x55a2a32c34f2 in std::pair<std::__detail::_Node_iterator<unsigned long, true, false>, bool> std::_Hashtable<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::_M_insert<unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>>>(unsigned long const&, std::__detail::_AllocNode<std::pmr::polymorphic_allocator<std::__detail::_Hash_node<unsigned long, false>>> const&, std::integral_constant<bool, true>) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable.h:956:11
+    #10 0x55a2a32c3151 in std::__detail::_Insert_base<unsigned long, unsigned long, std::pmr::polymorphic_allocator<unsigned long>, std::__detail::_Identity, std::equal_to<unsigned long>, std::hash<unsigned long>, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<false, true, true>>::insert(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/hashtable_policy.h:958:13
+    #11 0x55a2a32b9964 in std::unordered_set<unsigned long, std::hash<unsigned long>, std::equal_to<unsigned long>, std::pmr::polymorphic_allocator<unsigned long>>::insert(unsigned long const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/unordered_set.h:429:21
+    #12 0x55a2a32aea6c in apexmatch::MatchingEngine::add(unsigned long, apexmatch::Side, long, long) <repo>/src/engine.cpp:140:17
+    #13 0x55a2a3185871 in (anonymous namespace)::allocation_failure_destruction() <repo>/tests/core_tests.cpp:363:24
+    #14 0x55a2a31c4c19 in void std::__invoke_impl<void, void (*&)()>(std::__invoke_other, void (*&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/invoke.h:61:14
+    #15 0x55a2a31c4ad0 in std::enable_if<is_invocable_r_v<void, void (*&)()>, void>::type std::__invoke_r<void, void (*&)()>(void (*&)()) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/invoke.h:111:2
+    #16 0x55a2a31c46dc in std::_Function_handler<void (), void (*)()>::_M_invoke(std::_Any_data const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/std_function.h:290:9
+    #17 0x55a2a31a83f7 in std::function<void ()>::operator()() const /usr/bin/../lib/gcc/x86_64-linux-gnu/14/../../../../include/c++/14/bits/std_function.h:591:9
+    #18 0x55a2a31a7144 in apexmatch::test::run(char const*, std::function<void ()> const&) <repo>/tests/test_support.hpp:16:11
+    #19 0x55a2a3178346 in run_core_tests() <repo>/tests/core_tests.cpp:567:5
+    #20 0x55a2a317724f in main <repo>/tests/test_main.cpp:11:9
+    #21 0x7f687562a1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #22 0x7f687562a28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: a4a7992a8e66555c8141ab2a08a8465ff6e0ea65)
+    #23 0x55a2a309b9a4 in _start (<repo>/build/asan/apex_tests+0xfc9a4) (BuildId: bc11c8f65c6e9eefbf030b5462a2af7338ebd1ea)
+
+AddressSanitizer can not provide additional info.
+SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b) in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long)
+==2681==ABORTING
+
+    Start 2: replay
+2/6 Test #2: replay ...........................   Passed    0.09 sec
+    Start 3: network
+3/6 Test #3: network ..........................   Passed    0.22 sec
+    Start 4: extension_examples
+4/6 Test #4: extension_examples ...............   Passed    0.12 sec
+    Start 5: benchmark_tooling
+5/6 Test #5: benchmark_tooling ................   Passed    0.05 sec
+    Start 6: release_tooling
+6/6 Test #6: release_tooling ..................   Passed    0.07 sec
+
+83% tests passed, 1 tests failed out of 6
+
+Total Test time (real) =   0.89 sec
+
+The following tests FAILED:
+	  1 - core_and_extensions (Failed)
+Errors while running CTest
+##[error]Process completed with exit code 8.
