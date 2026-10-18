@@ -144,11 +144,13 @@ External commands are stably sorted by simulated time, preserving input order at
 
 ## 10. Read measurements after correctness
 
-**Problem:** decide whether a change improves the workloads you actually measured. Read [performance.md](performance.md), [benchmark.cpp](../benchmarks/benchmark.cpp), and [run_benchmarks.py](../tools/run_benchmarks.py), then the recorded [results](../results/benchmark/summary.md).
+**Problem:** decide whether a change improves the workloads you actually measured. Read [performance.md](performance.md), [benchmark.cpp](../benchmarks/benchmark.cpp), and [run_benchmarks.py](../tools/run_benchmarks.py), then the recorded [native Clang 23 results](../results/native-clang23/summary.md).
 
 The allocation experiment changes only the book resource: ordinary allocation versus an unsynchronized pool. Both modes preserve identical containers and semantics. Trace the three independent passes: batched throughput, individual-request latency, and allocation scan. Understand why event-vector destruction is timed but excluded from book-resource allocation counts, output is excluded, per-request clocks perturb latency, and requested bytes differ from RSS. The counting upstream resource exists only in the untimed allocation pass.
 
 **Example:** cancellation bursts can reuse pool nodes, while a growing distinct-level book retains many nodes and may pay extra chunk capacity. If p99 rises despite higher throughput, both observations matter. A faster average does not prove a better worst case. Do not infer cache behavior from timing alone; inspect profiler evidence when available.
+
+Use two actual cases as reading exercises. At one million shared-level requests, throughput rose from 2.885 to 5.998 million requests/s and p99 fell from 500 to 200 ns, but peak book-resource bytes rose from 147.19 to 199.16 MiB. At 10,000 large-book requests, throughput improved 1.203× while p99 worsened from 800 to 900 ns. Explain why the project retains the pool as opt-in and keeps the lower-memory baseline default. The Windows host's median back-to-back timer pair was 0 ns and percentiles were quantized in 100 ns increments; explain why this is not evidence that timing is free. Linux `perf` call-stack/counter checks remain unavailable on that host rather than being inferred from these measurements.
 
 **Tests:** both allocator modes run fixed-seed reference comparisons. Benchmark passes also check structural invariants and outcome counts. **C++ ideas:** PMR routes allocations at runtime without changing matching containers, a custom resource forwards sizes/alignments, resource lifetime, monotonic clocks, and statistical summaries. **Interview discussion:** formulate a hypothesis, change one cause, preserve the baseline, measure repeat spread, and state platform/instrumentation limits.
 

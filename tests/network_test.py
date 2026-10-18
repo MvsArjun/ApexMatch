@@ -240,6 +240,48 @@ def signal_test(server):
             process.wait(timeout=5)
 
 
+def large_response_test(server, client):
+    """Force queued send offsets and client framing across many receive calls."""
+    process, port = start_server(server)
+    seed = None
+    try:
+        seed = Peer(port)
+        count = 600
+        commands = "".join(f"ADD {index} SELL 100 1\n" for index in range(1, count + 1))
+        seed.sock.sendall(commands.encode())
+        for index in range(1, count + 1):
+            response = seed.response()
+            assert response[-1]["command_sequence"] == index
+            accepted = [event for event in response if event_kind(event) == "ACCEPTED"]
+            assert len(accepted) == 1 and accepted[0]["order_id"] == index
+
+        completed = subprocess.run([client, "--port", str(port)],
+                                   input=f"ADD 1000000 BUY 100 {count}\nBOOK\n",
+                                   capture_output=True, text=True, timeout=30)
+        assert completed.returncode == 0, completed.stderr
+        # The server caps each send at 65536 bytes, while the delivered client
+        # reads at most 4096 bytes. This response necessarily spans both loops,
+        # even when TCP accepts every individual send without a short count.
+        assert len(completed.stdout.encode()) > 65536, "sweep did not exercise send offsets"
+        events = [json.loads(line) for line in completed.stdout.splitlines()]
+        executions = [event for event in events if event_kind(event) == "EXECUTION"]
+        assert len(executions) == count
+        assert all(event["quantity"] == 1 and event["price"] == 100 for event in executions)
+        assert [event["sell_id"] for event in executions] == list(range(1, count + 1))
+        assert sum(event["quantity"] for event in executions) == count
+        markers = [event["command_sequence"] for event in events if event.get("type") == "RESPONSE_END"]
+        assert markers == [1, 2]
+        books = [event for event in events if event.get("type") == "book"]
+        assert len(books) == 1 and books[0]["bids"] == [] and books[0]["asks"] == []
+        finish_server(process, port)
+    finally:
+        if seed is not None:
+            seed.close()
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=5)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", required=True)
@@ -247,5 +289,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     regular_tests(args.server, args.client)
     bounds_tests(args.server)
+    large_response_test(args.server, args.client)
     signal_test(args.server)
     print("network integration checks passed")

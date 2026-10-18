@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Run from the repository root on Linux/WSL. Override arguments as needed.
-build_dir="${1:-build/release}"
+build_dir="${1:-build/profile}"
 workload="${2:-noncrossing}"
 size="${3:-1000000}"
 output_dir="${4:-results/profile}"

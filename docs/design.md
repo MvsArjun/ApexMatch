@@ -79,7 +79,10 @@ pointers. Applications cannot mutate a book through `engine.book()`.
 The engine/book cannot be copied; iterator-bearing state must not be shallowly
 copied. The pool resource, if enabled, is declared before all allocator-aware
 containers, so reverse member destruction destroys the containers before the
-resource. Both allocation modes have identical matching logic.
+resource. Both allocation modes have identical matching logic. For measurement,
+the constructor can accept a non-owning upstream memory-resource pointer, which
+must be non-null and outlive the engine. The pool forwards chunk allocations to
+that upstream; the baseline forwards individual container allocations.
 
 ## Validation, identity and integer boundaries
 
