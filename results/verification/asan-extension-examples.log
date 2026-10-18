@@ -1,0 +1,19 @@
+Start testing: Oct 18 21:42 India Standard Time
+----------------------------------------------------------
+4/4 Testing: extension_examples
+4/4 Test: extension_examples
+Command: "C:/Users/mvsar/AppData/Local/Programs/Python/Python312/python.exe" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/tests/extensions_e2e.py" "--pipeline" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_pipeline.exe" "--twap" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan/apex_twap.exe" "--examples" "C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/examples"
+Directory: C:/Users/mvsar/.codex/.chatgpt-projects/g-p-6ad4ebfdff1081918a23449ea5aa510d/apexmatch/build/asan
+"extension_examples" start time: Oct 18 21:42 India Standard Time
+Output:
+----------------------------------------------------------
+pipeline and TWAP executable examples passed
+<end of output>
+Test time =   1.89 sec
+----------------------------------------------------------
+Test Passed.
+"extension_examples" end time: Oct 18 21:42 India Standard Time
+"extension_examples" time elapsed: 00:00:01
+----------------------------------------------------------
+
+End testing: Oct 18 21:42 India Standard Time
