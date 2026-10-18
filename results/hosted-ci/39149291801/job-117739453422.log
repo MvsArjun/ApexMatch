@@ -1,0 +1,28 @@
+# Sanitized GitHub Actions log excerpt
+# Job: Clang 21 libc++ (asan)
+# URL: https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801/job/117739453422
+# Commit: 8337a3d91200e990ab0586859871606ffe8136e4
+# Job conclusion: success
+# This is a focused excerpt, not the full log. Checkout/authentication and setup noise omitted.
+# Repository and temporary runner paths are replaced with <repo> and <runner-temp>.
+
+2026-10-18T17:22:58.1566797Z Setting up libc++1:amd64 (1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70) ...
+2026-10-18T17:23:00.0034848Z ##[group]Run cmake --preset asan -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
+2026-10-18T17:23:00.1966178Z   APEX_SANITIZERS="ON"
+2026-10-18T17:23:00.1966670Z -- The CXX compiler identification is Clang 21.1.8
+2026-10-18T17:23:11.4181149Z ##[group]Run ctest --preset asan
+2026-10-18T17:23:49.9624838Z 1/6 Test #1: core_and_extensions ..............   Passed   38.50 sec
+2026-10-18T17:23:50.0987814Z 2/6 Test #2: replay ...........................   Passed    0.13 sec
+2026-10-18T17:23:50.4301848Z 3/6 Test #3: network ..........................   Passed    0.33 sec
+2026-10-18T17:23:50.6212333Z 4/6 Test #4: extension_examples ...............   Passed    0.19 sec
+2026-10-18T17:23:50.6940599Z 5/6 Test #5: benchmark_tooling ................   Passed    0.07 sec
+2026-10-18T17:23:50.8028589Z 6/6 Test #6: release_tooling ..................   Passed    0.11 sec
+2026-10-18T17:23:50.8033733Z 100% tests passed, 0 tests failed out of 6
+2026-10-18T17:23:50.8034084Z Total Test time (real) =  39.35 sec
+2026-10-18T17:23:50.8094502Z ##[group]Run clang++-21 -std=c++20 -stdlib=libc++ tools/repro_pool_failure.cpp -o build/pool-probe
+2026-10-18T17:23:51.9923987Z upstream allocate 288 alignment 8 remaining 2
+2026-10-18T17:23:51.9924627Z upstream allocate 1048 alignment 16 remaining 1
+2026-10-18T17:23:51.9925174Z upstream allocate 1320 alignment 16 remaining 0
+2026-10-18T17:23:51.9925794Z upstream deallocate 1048
+2026-10-18T17:23:51.9926201Z upstream deallocate 288
+2026-10-18T17:23:51.9926553Z bad_alloc propagated safely

@@ -1,0 +1,39 @@
+# Sanitized GitHub Actions log excerpt
+# Job: build (clang++, release)
+# URL: https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801/job/117739453583
+# Commit: 8337a3d91200e990ab0586859871606ffe8136e4
+# Job conclusion: failure
+# This is a focused excerpt, not the full log. Checkout/authentication and setup noise omitted.
+# Repository and temporary runner paths are replaced with <repo> and <runner-temp>.
+
+2026-10-18T17:22:48.8235792Z ##[group]Run cmake --preset release -DCMAKE_CXX_COMPILER=clang++
+2026-10-18T17:22:54.3426090Z -- The CXX compiler identification is Clang 18.1.3
+2026-10-18T17:23:10.7438975Z ##[group]Run ctest --preset release
+2026-10-18T17:23:11.2694875Z 1/6 Test #1: core_and_extensions ..............***Exception: SegFault  0.08 sec
+2026-10-18T17:23:11.2696594Z [PASS] empty and single-order books
+2026-10-18T17:23:11.2697098Z [PASS] single buy/sell fills at maker price
+2026-10-18T17:23:11.2697618Z [PASS] non-crossing orders and ordered depth
+2026-10-18T17:23:11.2698135Z [PASS] better price precedes older order
+2026-10-18T17:23:11.2698613Z [PASS] FIFO partial maker retains priority
+2026-10-18T17:23:11.2699142Z [PASS] multi-order multi-level sweep and taker residual
+2026-10-18T17:23:11.2699608Z [PASS] cancellation lifecycle and middle FIFO removal
+2026-10-18T17:23:11.2700092Z [PASS] duplicate IDs, completed IDs, and rejected ID reuse
+2026-10-18T17:23:11.2700451Z [PASS] invalid requests preserve the book
+2026-10-18T17:23:11.2700770Z [PASS] int64 and uint64 arithmetic boundaries
+2026-10-18T17:23:11.2701112Z [PASS] typed enum and allocator argument validation
+2026-10-18T17:23:11.2712162Z [PASS] sequence capacity preflight boundaries
+2026-10-18T17:23:11.3290516Z 2/6 Test #2: replay ...........................   Passed    0.05 sec
+2026-10-18T17:23:11.4768479Z 3/6 Test #3: network ..........................   Passed    0.15 sec
+2026-10-18T17:23:11.5418480Z 4/6 Test #4: extension_examples ...............   Passed    0.06 sec
+2026-10-18T17:23:11.6336529Z 5/6 Test #5: benchmark_tooling ................   Passed    0.09 sec
+2026-10-18T17:23:11.7465363Z 6/6 Test #6: release_tooling ..................   Passed    0.11 sec
+2026-10-18T17:23:11.7468461Z 83% tests passed, 1 tests failed out of 6
+2026-10-18T17:23:11.7469025Z Total Test time (real) =   0.60 sec
+2026-10-18T17:23:11.7909552Z ##[error]Process completed with exit code 8.
+2026-10-18T17:23:11.7962650Z ##[group]Run clang++ -std=c++20 -g tools/repro_pool_failure.cpp -o build/pool-probe
+2026-10-18T17:23:12.4738667Z upstream allocate 528 alignment 8 remaining 2
+2026-10-18T17:23:12.4739288Z upstream allocate 1016 alignment 16 remaining 1
+2026-10-18T17:23:12.4739834Z upstream allocate 192 alignment 8 remaining 0
+2026-10-18T17:23:12.4740324Z upstream deallocate 1016
+2026-10-18T17:23:12.5386704Z <runner-temp>/step.sh: line 2:  2971 Segmentation fault      (core dumped) ./build/pool-probe
+2026-10-18T17:23:12.5394165Z ##[error]Process completed with exit code 139.

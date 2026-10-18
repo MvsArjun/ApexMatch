@@ -1,0 +1,45 @@
+# Sanitized GitHub Actions log excerpt
+# Job: build (g++, asan)
+# URL: https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801/job/117739453434
+# Commit: 8337a3d91200e990ab0586859871606ffe8136e4
+# Job conclusion: failure
+# This is a focused excerpt, not the full log. Checkout/authentication and setup noise omitted.
+# Repository and temporary runner paths are replaced with <repo> and <runner-temp>.
+
+2026-10-18T17:22:50.8433186Z ##[group]Run cmake --preset asan -DCMAKE_CXX_COMPILER=g++
+2026-10-18T17:22:51.2170911Z   APEX_SANITIZERS="ON"
+2026-10-18T17:22:51.2171547Z -- The CXX compiler identification is GNU 13.3.0
+2026-10-18T17:23:02.7106996Z ##[group]Run ctest --preset asan
+2026-10-18T17:23:03.6101061Z 1/6 Test #1: core_and_extensions ..............***Failed    0.82 sec
+2026-10-18T17:23:03.6101488Z [PASS] empty and single-order books
+2026-10-18T17:23:03.6102129Z [PASS] single buy/sell fills at maker price
+2026-10-18T17:23:03.6102645Z [PASS] non-crossing orders and ordered depth
+2026-10-18T17:23:03.6103122Z [PASS] better price precedes older order
+2026-10-18T17:23:03.6103560Z [PASS] FIFO partial maker retains priority
+2026-10-18T17:23:03.6104076Z [PASS] multi-order multi-level sweep and taker residual
+2026-10-18T17:23:03.6104427Z [PASS] cancellation lifecycle and middle FIFO removal
+2026-10-18T17:23:03.6104840Z [PASS] duplicate IDs, completed IDs, and rejected ID reuse
+2026-10-18T17:23:03.6105160Z [PASS] invalid requests preserve the book
+2026-10-18T17:23:03.6105447Z [PASS] int64 and uint64 arithmetic boundaries
+2026-10-18T17:23:03.6105758Z [PASS] typed enum and allocator argument validation
+2026-10-18T17:23:03.6106070Z [PASS] sequence capacity preflight boundaries
+2026-10-18T17:23:03.6107200Z ==2845==ERROR: AddressSanitizer: SEGV on unknown address 0x0017fffffff0 (pc 0x7fefa89b7945 bp 0x7ffe3ed31d80 sp 0x7ffe3ed31d50 T0)
+2026-10-18T17:23:03.6113688Z     #0 0x7fefa89b7945 in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long) (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b)
+2026-10-18T17:23:03.6143427Z     #12 0x559233b8c4ea in apexmatch::MatchingEngine::add(unsigned long, apexmatch::Side, long, long) <repo>/src/engine.cpp:140
+2026-10-18T17:23:03.6144250Z     #13 0x559233a60908 in allocation_failure_destruction <repo>/tests/core_tests.cpp:363
+2026-10-18T17:23:03.6153501Z SUMMARY: AddressSanitizer: SEGV (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b) in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long)
+2026-10-18T17:23:03.7367577Z 2/6 Test #2: replay ...........................   Passed    0.13 sec
+2026-10-18T17:23:04.0851864Z 3/6 Test #3: network ..........................   Passed    0.35 sec
+2026-10-18T17:23:04.2728790Z 4/6 Test #4: extension_examples ...............   Passed    0.19 sec
+2026-10-18T17:23:04.3482552Z 5/6 Test #5: benchmark_tooling ................   Passed    0.08 sec
+2026-10-18T17:23:04.4568720Z 6/6 Test #6: release_tooling ..................   Passed    0.11 sec
+2026-10-18T17:23:04.4571531Z 83% tests passed, 1 tests failed out of 6
+2026-10-18T17:23:04.4572059Z Total Test time (real) =   1.67 sec
+2026-10-18T17:23:04.4614262Z ##[error]Process completed with exit code 8.
+2026-10-18T17:23:04.4663699Z ##[group]Run g++ -std=c++20 -g tools/repro_pool_failure.cpp -o build/pool-probe
+2026-10-18T17:23:04.8822101Z upstream allocate 528 alignment 8 remaining 2
+2026-10-18T17:23:04.8822539Z upstream allocate 1016 alignment 16 remaining 1
+2026-10-18T17:23:04.8822862Z upstream allocate 192 alignment 8 remaining 0
+2026-10-18T17:23:04.8823151Z upstream deallocate 1016
+2026-10-18T17:23:04.9520860Z <runner-temp>/step.sh: line 2:  2937 Segmentation fault      (core dumped) ./build/pool-probe
+2026-10-18T17:23:04.9526305Z ##[error]Process completed with exit code 139.

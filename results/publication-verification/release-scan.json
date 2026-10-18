@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "checked_current_files": 144,
+  "checked_history_blobs": 187,
+  "current_findings": [],
+  "history_findings": [
+    {
+      "object": "c75488f160c6",
+      "path": "docs/verification.md",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "79259cf01fe4",
+      "path": "results/native-clang23/metadata.json",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "2ede4b005d73",
+      "path": "results/native-clang23/results.json",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "a0f86d47238e",
+      "path": "results/verification/asan-core-replay-network.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "35a1f4a1cded",
+      "path": "results/verification/asan-extension-examples.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "75e34e9fb5a3",
+      "path": "results/verification/asan-network-large-response.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "f0a5296e50e7",
+      "path": "results/verification/clean-checkout-release.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "d44df54989f0",
+      "path": "results/verification/release.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "efe0f91cb220",
+      "path": "docs/verification.md",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "f7936026e105",
+      "path": "results/verification/clean-checkout-release.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    },
+    {
+      "object": "510834017afb",
+      "path": "results/verification/release.log",
+      "categories": [
+        "personal_absolute_path"
+      ]
+    }
+  ],
+  "limitations": "Pattern-based scan, not proof of absence of every secret. History is read-only; no rewriting or publication performed."
+}

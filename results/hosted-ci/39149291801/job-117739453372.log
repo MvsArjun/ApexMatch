@@ -1,0 +1,27 @@
+# Sanitized GitHub Actions log excerpt
+# Job: Clang 21 libc++ (release)
+# URL: https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801/job/117739453372
+# Commit: 8337a3d91200e990ab0586859871606ffe8136e4
+# Job conclusion: success
+# This is a focused excerpt, not the full log. Checkout/authentication and setup noise omitted.
+# Repository and temporary runner paths are replaced with <repo> and <runner-temp>.
+
+2026-10-18T17:23:01.5441233Z Setting up libc++1:amd64 (1:21.1.8~++20251221032922+2078da43e25a-1~exp1~20251221153059.70) ...
+2026-10-18T17:23:04.1632964Z ##[group]Run cmake --preset release -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
+2026-10-18T17:23:04.5491471Z -- The CXX compiler identification is Clang 21.1.8
+2026-10-18T17:23:11.7747496Z ##[group]Run ctest --preset release
+2026-10-18T17:23:12.6340322Z 1/6 Test #1: core_and_extensions ..............   Passed    0.80 sec
+2026-10-18T17:23:12.6711047Z 2/6 Test #2: replay ...........................   Passed    0.03 sec
+2026-10-18T17:23:12.7761035Z 3/6 Test #3: network ..........................   Passed    0.10 sec
+2026-10-18T17:23:12.8201621Z 4/6 Test #4: extension_examples ...............   Passed    0.04 sec
+2026-10-18T17:23:12.8726678Z 5/6 Test #5: benchmark_tooling ................   Passed    0.05 sec
+2026-10-18T17:23:12.9544131Z 6/6 Test #6: release_tooling ..................   Passed    0.08 sec
+2026-10-18T17:23:12.9546125Z 100% tests passed, 0 tests failed out of 6
+2026-10-18T17:23:12.9546369Z Total Test time (real) =   1.12 sec
+2026-10-18T17:23:12.9601120Z ##[group]Run clang++-21 -std=c++20 -stdlib=libc++ tools/repro_pool_failure.cpp -o build/pool-probe
+2026-10-18T17:23:13.6135946Z upstream allocate 288 alignment 8 remaining 2
+2026-10-18T17:23:13.6136314Z upstream allocate 1048 alignment 16 remaining 1
+2026-10-18T17:23:13.6136515Z upstream allocate 1320 alignment 16 remaining 0
+2026-10-18T17:23:13.6136672Z upstream deallocate 1048
+2026-10-18T17:23:13.6136802Z upstream deallocate 288
+2026-10-18T17:23:13.6136931Z bad_alloc propagated safely

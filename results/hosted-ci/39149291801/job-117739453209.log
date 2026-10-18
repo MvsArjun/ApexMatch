@@ -1,0 +1,45 @@
+# Sanitized GitHub Actions log excerpt
+# Job: thread-sanitizer
+# URL: https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801/job/117739453209
+# Commit: 8337a3d91200e990ab0586859871606ffe8136e4
+# Job conclusion: failure
+# This is a focused excerpt, not the full log. Checkout/authentication and setup noise omitted.
+# Repository and temporary runner paths are replaced with <repo> and <runner-temp>.
+
+2026-10-18T17:22:49.3635308Z ##[group]Run cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++
+2026-10-18T17:22:51.7616533Z   APEX_TSAN="ON"
+2026-10-18T17:22:51.7617046Z -- The CXX compiler identification is Clang 18.1.3
+2026-10-18T17:23:04.4187330Z ##[group]Run ctest --preset tsan
+2026-10-18T17:23:05.1454688Z 1/6 Test #1: core_and_extensions ..............***Failed    0.28 sec
+2026-10-18T17:23:05.1455403Z [PASS] empty and single-order books
+2026-10-18T17:23:05.1456239Z [PASS] single buy/sell fills at maker price
+2026-10-18T17:23:05.1456775Z [PASS] non-crossing orders and ordered depth
+2026-10-18T17:23:05.1457206Z [PASS] better price precedes older order
+2026-10-18T17:23:05.1457527Z [PASS] FIFO partial maker retains priority
+2026-10-18T17:23:05.1457877Z [PASS] multi-order multi-level sweep and taker residual
+2026-10-18T17:23:05.1458241Z [PASS] cancellation lifecycle and middle FIFO removal
+2026-10-18T17:23:05.1458694Z [PASS] duplicate IDs, completed IDs, and rejected ID reuse
+2026-10-18T17:23:05.1459028Z [PASS] invalid requests preserve the book
+2026-10-18T17:23:05.1459327Z [PASS] int64 and uint64 arithmetic boundaries
+2026-10-18T17:23:05.1459644Z [PASS] typed enum and allocator argument validation
+2026-10-18T17:23:05.1459982Z [PASS] sequence capacity preflight boundaries
+2026-10-18T17:23:05.1460846Z ==2926==ERROR: ThreadSanitizer: SEGV on unknown address 0x0017fffffff0 (pc 0x7f6ee03b7945 bp 0x7ffc0f505230 sp 0x7ffc0f505200 T2926)
+2026-10-18T17:23:05.1465792Z     #0 std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long) <null> (libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b)
+2026-10-18T17:23:05.1509795Z     #12 apexmatch::MatchingEngine::add(unsigned long, apexmatch::Side, long, long) <repo>/src/engine.cpp:140:17 (apex_tests+0x15d730) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+2026-10-18T17:23:05.1511671Z     #13 (anonymous namespace)::allocation_failure_destruction() <repo>/tests/core_tests.cpp:363:24 (apex_tests+0xed5d8) (BuildId: 1ad0d0b168872ee6f185c7cd70b6f515f1e1ed02)
+2026-10-18T17:23:05.1525716Z SUMMARY: ThreadSanitizer: SEGV (/lib/x86_64-linux-gnu/libstdc++.so.6+0x1b7945) (BuildId: 753c6c8608b61d4e67be8f0c890e03e0aa046b8b) in std::pmr::unsynchronized_pool_resource::do_allocate(unsigned long, unsigned long)
+2026-10-18T17:23:05.2753746Z 2/6 Test #2: replay ...........................   Passed    0.12 sec
+2026-10-18T17:23:05.7532170Z 3/6 Test #3: network ..........................   Passed    0.48 sec
+2026-10-18T17:23:05.9267471Z 4/6 Test #4: extension_examples ...............   Passed    0.17 sec
+2026-10-18T17:23:06.0265086Z 5/6 Test #5: benchmark_tooling ................   Passed    0.10 sec
+2026-10-18T17:23:06.1411768Z 6/6 Test #6: release_tooling ..................   Passed    0.11 sec
+2026-10-18T17:23:06.1418002Z 83% tests passed, 1 tests failed out of 6
+2026-10-18T17:23:06.1418511Z Total Test time (real) =   1.32 sec
+2026-10-18T17:23:06.1719333Z ##[error]Process completed with exit code 8.
+2026-10-18T17:23:06.1771876Z ##[group]Run clang++ -std=c++20 -g tools/repro_pool_failure.cpp -o build/pool-probe
+2026-10-18T17:23:06.8565237Z upstream allocate 528 alignment 8 remaining 2
+2026-10-18T17:23:06.8565719Z upstream allocate 1016 alignment 16 remaining 1
+2026-10-18T17:23:06.8566395Z upstream allocate 192 alignment 8 remaining 0
+2026-10-18T17:23:06.8566884Z upstream deallocate 1016
+2026-10-18T17:23:06.9317147Z <runner-temp>/step.sh: line 2:  2993 Segmentation fault      (core dumped) ./build/pool-probe
+2026-10-18T17:23:06.9321207Z ##[error]Process completed with exit code 139.

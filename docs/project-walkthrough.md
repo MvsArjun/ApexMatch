@@ -2,8 +2,9 @@
 
 These scripts describe the implemented project. Replace performance statements
 with numbers from an actual recorded run and name its platform; use
-[verification.md](verification.md) for current build/test evidence. Do not
-describe configured Linux CI as a completed hosted run.
+[verification.md](verification.md) for current build/test evidence. Actual hosted
+Linux Clang/libc++ Debug, Release, ASan/UBSan with leak detection and TSan pass;
+seven retained libstdc++ jobs fail, so the overall workflow remains red.
 
 ## Thirty-second introduction
 

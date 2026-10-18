@@ -45,7 +45,7 @@ The existing opt-in PMR pool is the only allocator experiment. In the historical
 
 No intrusive container, alternative hash table, pre-reservation strategy, event batching, or custom allocator was added during this audit. There is no measured call-stack evidence yet that would justify their complexity. The audit's parser/enum/concurrency corrections and tooling changes are correctness/reproducibility work. New-run differences from the historical revision must not be presented as an optimization's causal speedup.
 
-The final native GCC 16.2 runs uncovered a pool-resource crash under injected upstream allocation failure, independently reproduced using only the standard library. The mandatory test was retained and those full GCC runs failed. This is separate from the normal-allocation Clang/libc++ performance experiment; it limits portability/reliability claims about the optional pool. See [core-audit.md](core-audit.md).
+The final native GCC 16.2 runs uncovered a pool-resource crash under injected upstream allocation failure, independently reproduced using only the standard library. Hosted Linux libstdc++ jobs later reproduced both crashes, while four Clang 21/libc++ configurations passed the unchanged complete suite. The mandatory regression remains enabled and the overall CI workflow is red. This is separate from the normal-allocation Clang/libc++ performance experiment; it limits portability/reliability claims about the optional pool. See [core-audit.md](core-audit.md).
 
 ## Profiling availability
 

@@ -6,12 +6,14 @@ producer/consumer pipeline, a localhost TCP interface, and a simulated TWAP
 client. It is intended for studying systems engineering and discussing quant
 developer interviews. It has no brokerage connection or real-order capability.
 
-All features are implemented. The engineering audit passed all six test groups
-with native Clang Debug, Release, and ASan/UBSan. Native GCC 16.2 builds but fails
-the mandatory pool-allocation-failure test in its standard library; the full
-compiler matrix is not green. Linux/WSL2, TSan, leak detection and hosted CI
-remain unverified. Consult [verification](docs/verification.md) and the
-[isolated runtime issue](docs/toolchain-issue.md) before describing release status.
+All features are implemented and published at [MvsArjun/ApexMatch](https://github.com/MvsArjun/ApexMatch).
+All six test groups passed with native Clang/libc++ and with hosted Linux
+Clang 21/libc++ in Debug, Release, ASan/UBSan with leak detection, and TSan.
+The [actual CI run](https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801)
+remains **red**: seven libstdc++ jobs fail the mandatory pool-allocation-failure
+regression, also reproduced without engine code. Native GCC 16.2 has the same
+dependency limitation. See [verification](docs/verification.md), the
+[runtime issue](docs/toolchain-issue.md), and [publication record](docs/release-preparation.md).
 
 ## Start here
 
@@ -31,15 +33,16 @@ structures, C++ concepts, worked examples, tests, complexity and interview point
 
 ## Build and test on Linux / WSL2
 
-Use Ubuntu 24.04 or another environment with GCC 12+ or Clang 16+, CMake 3.21+,
-Ninja, and Python 3. Python is used by test/benchmark tooling, not the engine.
+Use Ubuntu 24.04 with Clang 21 and libc++ 21 for the fully passing hosted
+configuration. Install them using the signed official LLVM repository as shown
+in [the publication record](docs/release-preparation.md#verified-linux-toolchain).
+CMake 3.21+, Ninja, and Python 3 are also required.
+Python is used by test/benchmark tooling, not the engine.
 There are no downloaded C++ dependencies. The small test framework throws on
 failure in debug and release builds; it is not disabled by `NDEBUG`.
 
 ```sh
-sudo apt-get update
-sudo apt-get install -y g++ clang cmake ninja-build python3
-cmake --preset release -DCMAKE_CXX_COMPILER=clang++
+cmake --preset release -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
 cmake --build --preset release --parallel
 ctest --preset release
 ```
@@ -48,26 +51,28 @@ For a debug build, substitute `debug`. A build directory remembers its compiler;
 choose a fresh directory when switching compilers. All paths below are relative
 to the repository root. On Windows, WSL2 runs these commands inside Ubuntu.
 Native Windows LLVM-MinGW instructions are in [verification](docs/verification.md).
-Compiler versions above are language/build minimums, not claims that every
-runtime was tested. The tested GCC 16.2/libstdc++ resource-exhaustion failure
-remains open, and the Linux matrix has not run on this machine.
+The language/build minimums are GCC 12+ or Clang 16+, but they do not establish
+runtime reliability. Linux Clang uses libstdc++ by default on the tested image;
+selecting Clang alone does not avoid the observed allocation-failure defect.
 
 ```sh
 # AddressSanitizer + UndefinedBehaviorSanitizer, including Linux leak detection
-cmake --preset asan -DCMAKE_CXX_COMPILER=clang++
+cmake --preset asan -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
 cmake --build --preset asan --parallel
 ctest --preset asan
 # Native Windows uses: ctest --preset asan-windows (unsupported leak check off).
 
 # ThreadSanitizer must have its own build, separate from ASan.
-cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++
+cmake --preset tsan -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
 cmake --build --preset tsan --parallel
 ctest --preset tsan
 ```
 
-The [GitHub Actions workflow](.github/workflows/ci.yml) defines Linux GCC/Clang
-debug, release, ASan/UBSan and separate Clang TSan jobs. The workflow is supplied;
-no remote CI run is claimed by this local delivery.
+The [GitHub Actions workflow](.github/workflows/ci.yml) retains all seven
+GCC/Clang libstdc++ configurations and adds four independent Clang/libc++ checks.
+Every job runs the same complete suite. Failing regressions remain enabled.
+Hosted TSan jobs lower `vm.mmap_rnd_bits` to 28 for their shadow-memory layout;
+other hosts may require the same setting. See the [recorded results](docs/verification.md#actual-hosted-linux-ci).
 
 ## Architecture
 
@@ -258,8 +263,8 @@ not capped by those buffers. Cross-client network timing is nondeterministic;
 ordered engine replay is deterministic. These are documented educational
 tradeoffs, not production-exchange guarantees.
 
-The [verification report](docs/verification.md) explicitly separates checks run
-here from Linux-only checks still requiring another environment.
-The MIT license was explicitly confirmed during this audit. No GitHub
-repository has been created or pushed; [publication approval](docs/release-preparation.md)
-and unresolved verification are separate from implementation completeness.
+The [verification report](docs/verification.md) records native and actual hosted
+results. CPU sampling and hardware-counter profiling remain unavailable.
+The MIT license and public publication with existing history were explicitly
+approved. [Publication details](docs/release-preparation.md) preserve the open
+libstdc++ regression alongside passing libc++ configurations.

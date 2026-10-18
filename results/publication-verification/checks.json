@@ -1,0 +1,29 @@
+{
+  "recorded_at_utc": "2026-10-18T17:29:57.882317+00:00",
+  "tested_source_workflow_revision": "8337a3d91200e990ab0586859871606ffe8136e4",
+  "scope": "Publication documentation and evidence update; unchanged application, test, build, tool and workflow sources since the completed hosted run.",
+  "hosted_run": 39149291801,
+  "hosted_jobs_passed": 4,
+  "hosted_jobs_failed": 7,
+  "overall_ci": "failure",
+  "checks": {
+    "unchanged_tested_sources": {
+      "exit_code": 0
+    },
+    "workflow_syntax": {
+      "exit_code": 0,
+      "tool": "actionlint 1.7.12",
+      "optional_shellcheck": "not installed; disabled"
+    },
+    "whitespace": {
+      "exit_code": 0
+    },
+    "documentation_and_evidence": {
+      "exit_code": 0,
+      "local_markdown_links_checked": 247,
+      "problems": [],
+      "ci_evidence_jobs": 11
+    }
+  },
+  "limitations": "Local release checks do not turn failing hosted jobs green or establish CPU profiling results. History scan is retained separately at this pre-publication-documentation-commit snapshot."
+}

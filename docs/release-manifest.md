@@ -1,6 +1,6 @@
 # Release manifest
 
-Compared with pre-audit revision `bf0e409`. All listed changes are local audit commits; no remote or publication exists. Existing history is preserved.
+Compared with pre-audit revision `bf0e409`. Listed changes include the engineering audit, actual hosted CI evidence and approved public publication at [MvsArjun/ApexMatch](https://github.com/MvsArjun/ApexMatch). Existing history is preserved.
 
 The final handoff has no pending staged or unstaged changes. This manifest includes source, tests, documentation and small reproducibility evidence; build trees, binaries, compiler packages and profiling traces are excluded.
 
@@ -81,9 +81,32 @@ The final handoff has no pending staged or unstaged changes. This manifest inclu
 | A | `results/audit-verification/profiling-status.json` |
 | A | `results/audit-verification/release-scan.json` |
 | A | `results/audit-verification/tooling-checks.json` |
+| A | `results/hosted-ci/39148962889/clang-asan.log` |
+| A | `results/hosted-ci/39148962889/clang-debug.log` |
+| A | `results/hosted-ci/39148962889/clang-release.log` |
+| A | `results/hosted-ci/39148962889/clang-tsan.log` |
+| A | `results/hosted-ci/39148962889/gcc-asan.log` |
+| A | `results/hosted-ci/39148962889/gcc-debug.log` |
+| A | `results/hosted-ci/39148962889/gcc-release.log` |
+| A | `results/hosted-ci/39148962889/summary.json` |
+| A | `results/hosted-ci/39149291801/README.md` |
+| A | `results/hosted-ci/39149291801/job-117739453209.log` |
+| A | `results/hosted-ci/39149291801/job-117739453372.log` |
+| A | `results/hosted-ci/39149291801/job-117739453384.log` |
+| A | `results/hosted-ci/39149291801/job-117739453392.log` |
+| A | `results/hosted-ci/39149291801/job-117739453393.log` |
+| A | `results/hosted-ci/39149291801/job-117739453422.log` |
+| A | `results/hosted-ci/39149291801/job-117739453428.log` |
+| A | `results/hosted-ci/39149291801/job-117739453434.log` |
+| A | `results/hosted-ci/39149291801/job-117739453439.log` |
+| A | `results/hosted-ci/39149291801/job-117739453445.log` |
+| A | `results/hosted-ci/39149291801/job-117739453583.log` |
+| A | `results/hosted-ci/39149291801/summary.json` |
 | A | `results/native-clang23/README.md` |
 | M | `results/native-clang23/metadata.json` |
 | M | `results/native-clang23/results.json` |
+| A | `results/publication-verification/checks.json` |
+| A | `results/publication-verification/release-scan.json` |
 | M | `results/verification/asan-core-replay-network.log` |
 | M | `results/verification/asan-extension-examples.log` |
 | M | `results/verification/asan-network-large-response.log` |

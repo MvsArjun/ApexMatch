@@ -13,7 +13,7 @@ Use the version appropriate to the role and adjust only facts you can explain.
 
 * Engineered a single-owner C++20 matching engine with bounded producer-consumer
   replay, localhost TCP order entry, market-data snapshots and simulated TWAP;
-  passed 29 named C++ cases and complete native Clang ASan/UBSan integration checks.
+  passed 29 named C++ cases and complete Linux Clang/libc++ ASan/UBSan, leak and TSan checks.
 
 ## Low-Latency Software Engineer
 
@@ -32,10 +32,11 @@ memory was 147.34 MiB baseline versus 199.41 MiB pooled; this is not RSS.
 The earlier delivery run remains separately labeled in
 [performance.md](performance.md). Neither run establishes a production SLA.
 
-The second bullet describes the tested Clang/libc++ runtime. Native GCC 16.2
-builds but fails the mandatory pool allocation-failure regression in libstdc++;
-do not describe this as full cross-compiler verification. Linux, TSan,
-LeakSanitizer and hosted CI have not passed locally. See
+The second bullet describes the tested Clang/libc++ runtime, including four
+successful hosted Linux jobs. Native GCC 16.2 and seven hosted Linux libstdc++
+configurations build but fail the mandatory pool allocation-failure regression;
+the overall workflow remains red. Do not describe this as a fully passing
+cross-compiler matrix. See
 [verification.md](verification.md) and [the dependency reproducer](toolchain-issue.md).
 
 Do not claim this is a production exchange, brokerage integration, profitable

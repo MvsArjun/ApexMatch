@@ -2,12 +2,14 @@
 
 Audit date: 18 October 2026. Starting revision: `bf0e409`. The existing
 repository was reviewed and improved in place. Working functionality and the
-matching architecture were preserved. No public repository or push was made.
+matching architecture were preserved. The approved public repository is now
+[MvsArjun/ApexMatch](https://github.com/MvsArjun/ApexMatch), with existing history retained.
 
 The complete implementation is present. **Verification is not fully green:**
-the tested GCC 16.2 standard library crashes under injected pool-resource
-allocation failure. Clang passes the complete exercised suite. Linux-specific
-verification and actual hosted CI remain unavailable.
+the tested native GCC 16.2 and hosted Linux libstdc++ runtimes crash under
+injected pool-resource allocation failure. Native Clang/libc++ passes the full
+suite, as do four actual hosted Linux Clang 21/libc++ configurations, including
+ASan/UBSan with leak detection and separate TSan. The full CI matrix remains red.
 
 ## 1. Existing issues and initial component classification
 
@@ -21,14 +23,14 @@ Source inspection and expanded tests then found gaps beyond those original check
 | Cancellation and permanent accepted-ID registry | Verified working in exercised paths | Partial/inactive cancellation, retired IDs and rejected-ID reuse pass. |
 | Event sequencing, parser and deterministic replay | Verified working for parsed inputs | Typed API enum defect corrected; exact oracle rejection reasons added. |
 | Depth/active-order queries | Defective or inconsistent for invalid typed Side | Invalid values now throw rather than silently selecting sell. Normal query tests pass. |
-| PMR baseline and optional pool | Implemented but exception coverage incomplete | Clang failure injection passes; native GCC runtime failure remains open. |
+| PMR baseline and optional pool | Implemented but exception coverage incomplete | Native and hosted Clang/libc++ failure injection passes; native/hosted libstdc++ dependency failure remains open. |
 | Bounded queue/pipeline | Implemented with tested normal shutdown | Added multi-consumer/error cases; constructor ordering hardened. Generic blocked input still cannot be interrupted. |
 | Local TCP server/client | Defective client bounds enforcement | Reproduced framed-response bypass; bounded input and boundary tests added. |
 | Market-data publisher | Verified working in exercised paths | Serialized increments reconstruct against top/depth snapshots and BOOK. |
 | Simulated TWAP | Verified working in exercised paths | Added maximum and zero-duration scheduling cases; no fill assumption. |
 | Correctness/integration suite | Working, with audit coverage gaps | Expanded from 26 to 29 named C++ cases, plus 13 tooling cases. |
 | Benchmark tooling | Defective evidence/provenance safeguards | Rejects inappropriate builds and evidence reuse; schema/metrics validated. |
-| Sanitizer/CI configuration | Implemented, partly environment-blocked | Native Clang ASan/UBSan passes; Linux TSan/LSan/CI not run. |
+| Sanitizer/CI configuration | Implemented, partly environment-blocked | Native ASan/UBSan and hosted libc++ ASan/UBSan/LSan/TSan pass; seven libstdc++ jobs fail. |
 | Required runtime features absent | Not implemented: none found | Resume/walkthrough/practice release documents were missing and are now added. |
 
 ## 2. Corrections made
@@ -89,7 +91,9 @@ Fresh native Clang 23.1.3 Debug, Release and Debug ASan/UBSan; fresh native
 GCC 16.2 Debug and Release. All five configured and compiled. GCC test execution
 failed in its standard library. An archived original checkout was built before
 changes; final clean-checkout evidence is recorded separately in verification.
-Linux builds were not executed and are not inferred from workflow syntax.
+Actual hosted Ubuntu 24.04 runs additionally configured, compiled and tested
+GCC 13.3/libstdc++ and Clang 18.1.3/libstdc++ Debug/Release/ASan, separate
+Clang/libstdc++ TSan, and Clang 21.1.8/libc++ Debug/Release/ASan/TSan.
 
 ## 6. Exact test results
 
@@ -109,17 +113,39 @@ as tooling; they do not erase its failure. [Verification and logs](verification.
 The final clone used committed revision `7b47fb7` and no prior build products.
 It passed the expanded release-scanner assertions and the complete current suite.
 
+Actual hosted run `39149291801` at `8337a3d` completed with:
+
+| Linux configuration | CTest groups passed / failed |
+|---|---:|
+| Clang 21.1.8 / libc++ 21.1.8 Debug | 6 / 0 |
+| Clang 21.1.8 / libc++ 21.1.8 Release | 6 / 0 |
+| Clang 21.1.8 / libc++ 21.1.8 ASan/UBSan + leak detection | 6 / 0 |
+| Clang 21.1.8 / libc++ 21.1.8 TSan | 6 / 0 |
+| GCC 13.3 / libstdc++ Debug, Release, ASan (3 jobs) | Each 5 / 1 |
+| Clang 18.1.3 / libstdc++ Debug, Release, ASan, TSan (4 jobs) | Each 5 / 1 |
+
+Each complete libc++ run executes the same 29 named C++ cases, 13 tooling cases
+and integration coverage. All seven failures occur in the unchanged mandatory
+pool regression. [Actual job evidence](../results/hosted-ci/39149291801/summary.json).
+
 ## 7. Sanitizer results
 
 The full six-group Clang ASan/UBSan run passed with no diagnostic, leak checking
 disabled because the Windows runtime does not support it. Total was 111.33 s;
 the C++ group was 80.20 s. The old invalid-enum defect was reproduced under UBSan
-before correction. LSan and TSan are unavailable locally; no pass is claimed.
+before correction. Native LSan and TSan are unavailable. Hosted Linux Clang
+21/libc++ now passes the entire suite under ASan/UBSan with leak detection
+enabled, and separately under TSan, without diagnostics. The tested TSan jobs
+set `vm.mmap_rnd_bits=28`. The seven libstdc++ sanitizer/ordinary configurations
+do not complete the core suite and remain failures.
 
 The new allocation test demonstrated a GCC runtime defect. An engine-free
 probe crashes with `0xc0000005`, while libc++ propagates `bad_alloc`. GDB,
 source analysis, logs and reproduction are in [toolchain-issue.md](toolchain-issue.md).
-No standard library was patched and no upstream issue was posted.
+The next hosted run reproduced the engine-free crash in all seven libstdc++
+jobs (exit 139); all four libc++ probes propagated `bad_alloc` safely. These
+probes were uninstrumented; sanitizer claims above come from the full test
+builds. No standard library was patched and no upstream issue was posted.
 
 ## 8. Repeated benchmark results
 
@@ -171,34 +197,40 @@ material in tested capabilities and measured limits. MIT was explicitly confirme
 Existing history was preserved. Focused audit commits include `8688727` (core
 guards/boundaries), `42c47a7` (client/pipeline), `40d6242` (benchmark/verification),
 and `40ead65` (evidence and GCC blocker). Later commits add release documentation,
-fresh-clone evidence and the final scan/manifest. See `git log --oneline bf0e409..HEAD`.
+fresh-clone evidence and the final scan/manifest. Approved revision `4f09688`
+was pushed publicly; `8337a3d` added independent libc++ checks and hosted
+evidence. Later documentation/evidence commits record the actual results.
+See `git log --oneline bf0e409..HEAD`.
 The release manifest identifies committed contents; build trees and compiler
 downloads remain outside tracked source. The working tree is checked before handoff.
 
 ## 12. GitHub publication
 
-No repository was created and no push occurred. No remote is configured.
-The connected GitHub account is `MvsArjun`; GitHub CLI/local push authentication
-is not established. Repository name, visibility, account and explicit approval
-are required before publication. Original history contains 11 old personal-path
-blobs; current files were redacted without rewriting history. See
-[release preparation](release-preparation.md) and the exact scan/manifest.
+The user approved public `MvsArjun/ApexMatch`, MIT and preservation of existing
+history. The repository was created, pushed via authenticated Git Credential
+Manager and verified through its remote refs and actual Actions results.
+`origin` is `https://github.com/MvsArjun/ApexMatch.git`, default branch `master`.
+Original history retains 11 old personal-path blobs as approved; current files
+are redacted. See [publication record](release-preparation.md) and the scan/manifest.
 
 ## 13. CI verification
 
-The workflow defines six GCC/Clang Debug/Release/ASan configurations plus a
-separate Clang TSan job, read-only contents permissions and bounded job times.
-actionlint 1.7.12 passed locally, with optional ShellCheck unavailable. No actual
-GitHub Actions run exists; workflow presence and syntax do not establish green CI.
+The workflow retains all seven original libstdc++ jobs and adds four Clang
+21/libc++ configurations. The [actual latest source run](https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801)
+at `8337a3d` completed with **4 jobs passed, 7 failed**, so overall CI is red.
+Each passing job ran the full six groups. Each failed job passed five groups
+and crashed in the core pool regression, then independently reproduced the
+engine-free standard-library crash. No failure was allowed, skipped or hidden.
+actionlint 1.7.12 passed locally, with optional ShellCheck unavailable.
+Later documentation/results-only pushes do not trigger another workflow run.
 
 ## 14. Outstanding limitations and blockers
 
-* Native GCC 16.2 pool resource-exhaustion regression fails in libstdc++.
-* Linux/WSL2, TSan, LSan and hosted CI have not run in this environment.
+* Native GCC 16.2 and seven hosted Linux libstdc++ jobs fail the pool
+  resource-exhaustion regression. Exact Linux libstdc++ package version was not
+  captured; compiler version alone does not identify its installed runtime.
 * CPU sampling/counters are unavailable: no Linux perf; Windows WPR CPU start
   failed performance policy `0xc5585011`, with no recording left active.
-* Public release requires approval, destination decisions and review of old
-  history path strings; publication was deliberately not performed.
 * Intentional simulator limits remain: one instrument, limit orders, growing
   lifetime IDs, no transactional allocation rollback, generic blocked-input
   cancellation, bounded application TCP buffers but no exactly-once recovery,
@@ -206,9 +238,9 @@ GitHub Actions run exists; workflow presence and syntax do not establish green C
 
 ## 15. Recommended next improvements
 
-First verify a corrected GCC/runtime using the standalone probe, then rerun the
-unchanged full suite and actual Linux CI. Run TSan/LSan and the supplied perf
-profile on a supported host. Measure under finer clock resolution and controlled
+First verify a corrected libstdc++ runtime using the standalone probe, then rerun
+the unchanged full suite and actual Linux CI. Preserve the passing libc++ checks.
+Run the supplied perf profile on a supported host. Measure under finer clock resolution and controlled
 CPU conditions before interpreting small tail differences. Only measured
-hotspots should motivate further allocation/event-storage work. Review history
-privacy and publication preferences before opening a portfolio repository.
+hotspots should motivate further allocation/event-storage work. Keep runtime
+versions and the open failure visible in portfolio/interview claims.

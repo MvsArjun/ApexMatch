@@ -1,75 +1,95 @@
-# GitHub release preparation
+# GitHub publication record
 
-## Current status
+## Published repository and approvals
 
-The repository is local and committed. No Git remote exists. No GitHub
-repository was created, no push was performed, and no hosted CI run exists.
-The connected GitHub account identified itself as `MvsArjun`; this is a
-read-only account check, not publication authorization or proof of Git push
-authentication. GitHub CLI (`gh`) is not installed on the current PATH.
+[MvsArjun/ApexMatch](https://github.com/MvsArjun/ApexMatch) is public, with
+`master` as its default branch and `origin` set to
+`https://github.com/MvsArjun/ApexMatch.git`. The user explicitly approved the
+repository name, public portfolio publication, destination account `MvsArjun`,
+MIT license, and preservation of existing history including its old personal
+path strings. No history was rewritten and no force push was used.
 
-The user explicitly chose **Keep MIT** during this audit. The existing license
-was retained. Existing Git history was preserved; no reset, rebase, force push,
-commit deletion or history rewriting was performed.
+The initial push published the reviewed audit revision
+`4f09688f73fb0440014656fd56e46753a444f7a1`. Subsequent commit
+`8337a3d91200e990ab0586859871606ffe8136e4` added independent libc++ CI checks
+and first-run evidence. Later documentation/evidence commits record actual
+outcomes; the tested source/workflow revision is identified explicitly below.
+Git Credential Manager authenticated the approved account for the GitHub API
+and HTTPS push. No credential was written into tracked files or logs.
 
-## Material to review
+## Actual CI results
 
-* [Audit report](audit-report.md): defects, actual results, source changes,
-  benchmark findings, and unresolved verification.
-* [Release manifest](release-manifest.md): files changed from the pre-audit
-  commit, and the staged/committed release contents.
-* [Verification](verification.md): Clang success and the failed GCC runs.
-* [GCC dependency issue](toolchain-issue.md): an unchanged mandatory failing
-  regression and engine-free reproducer; this blocker is not hidden.
-* [Scan report](../results/audit-verification/release-scan.json): current tree,
-  known credential patterns, sensitive filenames, size/artifact checks, history.
+The [first run](https://github.com/MvsArjun/ApexMatch/actions/runs/39148962889)
+at `4f09688` completed with all seven jobs failing `core_and_extensions` in
+the injected pool-allocation-failure regression. Every job configured and built,
+and each passed the other five CTest groups. Both GCC and default Linux Clang
+used libstdc++; changing the compiler did not change that dependency.
 
-The current publishable tree has personal absolute paths removed from metadata
-and logs. Original history still contains **11 historical blobs with personal
-path strings** from the initial build. The scan found no matching credential
-patterns in those blobs. A pattern scan is not a proof that every secret is
-absent. The working tree and an exported source archive can be reviewed without
-publishing history; the audit did not rewrite that history without permission.
+The [second run](https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801)
+at `8337a3d` completed with **four successful jobs and seven failed jobs**:
 
-The GitHub account name above is intentional public destination context, not a
-credential. Build trees, compiler installations, temporary sources, executable
-archives and local profiling traces are ignored or kept outside the repository.
-Small raw benchmark observations are intentional reproducibility evidence.
+| Runtime/configuration | Actual result |
+|---|---|
+| Clang 21.1.8 / libc++ 21.1.8 Debug | 6 groups passed, 0 failed |
+| Clang 21.1.8 / libc++ 21.1.8 Release | 6 groups passed, 0 failed |
+| Clang 21.1.8 / libc++ 21.1.8 ASan + UBSan, leak detection enabled | 6 groups passed, 0 failed; no sanitizer diagnostic |
+| Clang 21.1.8 / libc++ 21.1.8 TSan | 6 groups passed, 0 failed; no sanitizer diagnostic |
+| GCC 13.3 / libstdc++ Debug, Release, ASan | Each 5 groups passed, 1 failed in the mandatory allocation regression |
+| Clang 18.1.3 / libstdc++ Debug, Release, ASan, TSan | Each 5 groups passed, 1 failed in the same regression |
 
-## Required decisions before publication
+All seven libstdc++ jobs also crashed in the standalone standard-library-only
+probe. All four libc++ probes propagated `bad_alloc` safely. The probes were
+compiled without sanitizer flags; the full ASan/UBSan and TSan CTest runs used
+instrumented application/core targets. See [sanitized CI evidence](../results/hosted-ci/39149291801/summary.json),
+[verification](verification.md) and [dependency analysis](toolchain-issue.md).
 
-The user must confirm the repository name, visibility (public/private),
-destination account, and explicit approval to publish the reviewed contents.
-They should also decide whether to publish the existing history with its old
-personal path strings, or authorize a separate history-cleanup process.
-That cleanup is not implied by approval to edit current source files.
+The workflow remains **red**. The failing jobs and regression have not been
+disabled, weakened, or marked as allowed failures. Documentation and result-only
+pushes are ignored by the workflow; a later documentation commit does not imply
+a new source validation run. A manual workflow dispatch remains available.
 
-The GCC runtime failure and unavailable Linux CI mean the audit does not
-recommend describing the release as fully verified. Before a public portfolio
-release, verify a corrected runtime with the supplied reproducer and run actual
-Linux CI. A private review repository could retain these as documented open issues
-if explicitly approved.
+## Verified Linux toolchain
 
-## Authentication and later publication procedure
-
-If using GitHub CLI, install it from the official distribution and then
-authenticate interactively. The CLI's browser login and Git credential setup
-are documented in the [official authentication manual](https://cli.github.com/manual/gh_auth_login).
-Never paste a token into a committed file or a command log.
+The passing jobs run on Ubuntu 24.04. The following installation is the same
+signed [official LLVM APT repository](https://apt.llvm.org/) used in the workflow:
 
 ```sh
-gh auth login --web --git-protocol https
-gh auth setup-git
-gh auth status
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg cmake ninja-build python3
+curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/apexmatch-llvm.gpg >/dev/null
+echo 'deb [signed-by=/usr/share/keyrings/apexmatch-llvm.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-21 main' | sudo tee /etc/apt/sources.list.d/apexmatch-llvm.list
+sudo apt-get update
+sudo apt-get install -y clang-21 libc++-21-dev libc++abi-21-dev
+cmake --preset release -DCMAKE_CXX_COMPILER=clang++-21 -DCMAKE_CXX_FLAGS=-stdlib=libc++
+cmake --build --preset release --parallel 2
+ctest --preset release
 ```
 
-After all required approvals, use the approved account/name and exactly one
-approved visibility. The [official repository-creation manual](https://cli.github.com/manual/gh_repo_create)
-documents creating from a local source and pushing. These are instructions for
-the later approved action; none were executed during the audit.
+Use fresh build directories when switching compiler or standard library.
+Substitute `debug`, `asan`, or `tsan` consistently for the other tested presets.
+The TSan jobs additionally set `sudo sysctl vm.mmap_rnd_bits=28` before testing.
+This toolchain is an additional verified configuration; the original libstdc++
+jobs remain visible and failing.
 
-Before pushing, show `git status --short`, `git diff --stat bf0e409..HEAD`,
-`git log --oneline bf0e409..HEAD`, and the release manifest. Re-run the scanner,
-confirm the remote URL, then execute only the approved publication operation.
-After pushing, inspect the actual remote files and Actions runs. A workflow
-file or successful actionlint run does not establish successful hosted CI.
+## Published content and retained limitations
+
+* [Audit report](audit-report.md): corrections, measurements, exact verification,
+  publication and remaining work.
+* [Release manifest](release-manifest.md): tracked changes from `bf0e409`.
+* [Publication scan](../results/publication-verification/release-scan.json):
+  current files and historical pattern/artifact checks.
+* [Publication checks](../results/publication-verification/checks.json):
+  workflow syntax, local documentation links, evidence consistency and source freeze.
+* [Benchmark evidence](../results/audit-native-clang23/summary.md): 108 audited
+  observations, with historical observations preserved separately.
+
+Current publishable files have personal absolute paths redacted. Existing
+history retains **11 historical blobs with personal path strings**, explicitly
+approved for publication. No matched credential pattern was found; a pattern
+scan cannot prove the absence of every secret. Compiler installations, local
+build trees, executables, archives and temporary profiling data are excluded.
+
+Implementation and approved publication are complete. Verification remains
+limited by the reproduced libstdc++ resource-exhaustion defect and unavailable
+CPU stack/hardware-counter profiling. Passing libc++ sanitizer runs apply to
+the exercised tests, not to all possible executions or production guarantees.

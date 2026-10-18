@@ -23,7 +23,7 @@ The classifications describe exercised behavior, not a formal proof. Whole
 application builds, replay integration, extensions and platform-specific checks
 are recorded in [verification.md](verification.md).
 
-## GCC standard-library failure discovered during final verification
+## libstdc++ failure discovered during final verification
 
 Fresh native w64devkit GCC 16.2 Debug and Release runs failed the C++ group with
 a segmentation fault in the new allocation-failure case. GDB localized it to
@@ -53,12 +53,23 @@ vector is empty. This is an inference from the source corroborated by the
 engine-free local reproducer and GDB stack. The tested Clang/libc++ runtime
 passed the complete failure-injection case.
 
-The application regression remains enabled. No assertion was weakened and no
-allocator was replaced to conceal the dependency failure. Full GCC C++ testing
-on this runtime therefore remains failed, while Linux GCC/Clang runtimes still
-need their own execution. Generalizing this result to every GCC version or
-platform would be unsupported. See [verification.md](verification.md) for the
-final platform matrix and preserved failure evidence.
+Hosted Linux [run 39149291801](https://github.com/MvsArjun/ApexMatch/actions/runs/39149291801)
+at commit `8337a3d91200e990ab0586859871606ffe8136e4` subsequently reproduced the
+same mandatory-case failure in all seven original Ubuntu 24.04 jobs: GCC 13.3.0
+Debug/Release/ASan and Clang 18.1.3 Debug/Release/ASan/TSan, using the runner's
+default libstdc++. Their independent engine-free probes also segfaulted. The
+shared runtime package version was not recorded; compiler versions must not be
+presented as its exact version.
+
+Four additional Clang 21.1.8/libc++ 21.1.8 Linux jobs passed all six CTest groups
+in Debug, Release, ASan/UBSan with leak detection enabled, and separate TSan.
+They ran the unchanged allocation-failure regression, all 29 named C++ cases
+and 40,000 differential requests. The original failing matrix remains enabled;
+the overall workflow is failed. No assertion was weakened or test skipped.
+The passing libc++ matrix establishes independent Linux coverage, while the
+tested libstdc++ dependency failure remains unresolved. Generalizing this result
+to every library version would be unsupported. See [verification.md](verification.md)
+and [hosted job evidence](../results/hosted-ci/39149291801/README.md).
 The standalone reproduction procedure and full dependency diagnosis are in
 [toolchain-issue.md](toolchain-issue.md).
 
@@ -147,5 +158,6 @@ warning set. An isolated `-O1 -g -fsanitize=address,undefined` core run passed
 the same 25 cases with no sanitizer diagnostics; `detect_leaks=0` was used on
 Windows, so this is not a LeakSanitizer result. Consult
 [verification.md](verification.md) for final combined build and sanitizer
-results. Near-exhaustion engine state injection, global
+results, including the complete Linux Clang/libc++ Debug, Release, ASan/UBSan
+and TSan passes and the retained libstdc++ failures. Near-exhaustion engine state injection, global
 allocation-failure rollback and formal proofs remain outside this coverage.
