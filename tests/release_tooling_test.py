@@ -16,6 +16,8 @@ class ReleaseAuditTests(unittest.TestCase):
     def test_secret_patterns_and_no_values_in_report(self):
         token = ("gh" + "p_" + "a" * 36).encode()
         self.assertIn("github_token", AUDIT.inspect(token))
+        assignment = ("pass" + "word = 'synthetic-value'").encode()
+        self.assertIn("literal_credential_assignment", AUDIT.inspect(assignment))
         self.assertEqual(AUDIT.inspect(b"src/engine.cpp"), [])
 
     def test_personal_and_relative_paths(self):
@@ -52,9 +54,11 @@ class ReleaseAuditTests(unittest.TestCase):
             subprocess.run(["git", "-C", str(root), "init"], capture_output=True, check=True)
             (root / "program.exe").write_bytes(b"fixture")
             (root / "large.txt").write_bytes(b"x" * (1024 * 1024 + 1))
+            (root / "credentials.json").write_text("{}")
             rows = {row["path"]: row["categories"] for row in AUDIT.scan(root, False)["current_findings"]}
             self.assertIn("build_or_archive_artifact", rows["program.exe"])
             self.assertIn("large_file_over_1_MiB", rows["large.txt"])
+            self.assertIn("sensitive_filename", rows["credentials.json"])
 
 
 if __name__ == "__main__":

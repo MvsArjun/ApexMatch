@@ -1,0 +1,92 @@
+{
+  "recorded_utc": "2026-10-18T16:43:40.555593+00:00",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "os": "Windows",
+  "release": "11",
+  "machine": "AMD64",
+  "cpu": "AMD Ryzen 5 6600H with Radeon Graphics",
+  "logical_cpus": 12,
+  "physical_memory_bytes": 16312721408,
+  "cpu_affinity": null,
+  "python": "3.12.8",
+  "executable": "${BENCHMARK}",
+  "executable_sha256": "0dfb86f6ebf7fa328cca968fdf852ac36b765838301f094bb52fe633cb8c9f66",
+  "build": {
+    "APEX_BUILD_BENCHMARKS": "ON",
+    "APEX_SANITIZERS": "OFF",
+    "APEX_TSAN": "OFF",
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_COMPILER": "${TOOLCHAIN}/clang++.exe",
+    "CMAKE_CXX_FLAGS": "",
+    "CMAKE_CXX_FLAGS_DEBUG": "-g",
+    "CMAKE_CXX_FLAGS_MINSIZEREL": "-Os -DNDEBUG",
+    "CMAKE_CXX_FLAGS_RELEASE": "-O3 -DNDEBUG",
+    "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG",
+    "CMAKE_GENERATOR": "Ninja",
+    "compiler_version": "clang version 23.1.3 (https://github.com/llvm/llvm-project.git 0d261d1ca552c95a8f007e061c787ac7132fbcbc)\nTarget: x86_64-w64-windows-gnu\nThread model: posix\nInstalledDir: ${TOOLCHAIN}\nConfiguration file: ${TOOLCHAIN}/x86_64-w64-windows-gnu.cfg",
+    "benchmark_compile_commands": [
+      {
+        "directory": "${BUILD}",
+        "command": "${TOOLCHAIN}\\clang++.exe -I${REPO}/include -O3 -DNDEBUG -std=c++20 -Wall -Wextra -Wpedantic -Wshadow -o CMakeFiles\\apexmatch_bench.dir\\benchmarks\\benchmark.cpp.obj -c ${REPO}\\benchmarks\\benchmark.cpp",
+        "file": "${REPO}/benchmarks/benchmark.cpp",
+        "output": "${BUILD}/CMakeFiles/apexmatch_bench.dir/benchmarks/benchmark.cpp.obj"
+      }
+    ]
+  },
+  "compiler_basename": "clang++.exe",
+  "build_verification": "Release cache and optimized benchmark compile command inspected; executable/source correspondence requires a fresh build",
+  "source_sha256": {
+    "benchmarks/benchmark.cpp": "b9c93bcc0e5f11ec9f6d046aef1397c6f93a5d50ce61c249ecb8b717737d5c25",
+    "CMakeLists.txt": "9c44b9849ae4ed88fec4a5adb016455533e605d29ddfddc6d2729e2ac485b6fd",
+    "CMakePresets.json": "1d4fc3ad6b923a6f6109ae437e5ed6e55d8101dfbbeb7b3c9c053fe47e62302b",
+    "include/apexmatch/engine.hpp": "9a6b4ac37b54387fc4c98b4007e429a4f39281a3911037d426c8d88652459f48",
+    "include/apexmatch/extensions.hpp": "a233b4c7cd02457fe11114f03963929f4114aaffd418fea3bdafb2778fb4ff4c",
+    "include/apexmatch/protocol.hpp": "46603bfb5418f68397d1deb8ddf6644cae8f8ebd442b406e91ee4d54556bc983",
+    "src/engine.cpp": "cbe23e13435d8157399369c7351190f6602d7c782c59500e02b467486580ac97",
+    "src/extensions.cpp": "0b9e322944fc283b68afd9762b5bc1dfc62d0e432d8ec2e424afd84b6fcfd955",
+    "src/protocol.cpp": "dbb8809a30aa070903cf91065d7b42b5299accf6f150710ab85af735e45d907e",
+    "src/sequence_capacity.hpp": "e2cb3578e51abf72578eae93da72793e1c036426b27e74050a989ce02b2fef76",
+    "tools/generate_stream.py": "39ccb274be9f22ebdda28f97bac52026d3fb95472a2f7fff5f2e3db86424f6b3",
+    "tools/portable_evidence.py": "d3d30a9358877fde25aff63479c75f92841967d6208861573a1c1e6dc87f7e1b",
+    "tools/profile.sh": "4fd831b4ca91def264d36d5d3e7f0586ab3270a989160a0ba4007f85dec23982",
+    "tools/release_audit.py": "9051df74b48891bbec5194e28400cd4158770a935bb66e1dd770d0acfa6920bd",
+    "tools/repro_pool_failure.cpp": "2bbf3ed40174a476b5d42e94230a78870f6f7b0c0d7ba793f6aa3b8a22757946",
+    "tools/run_benchmarks.py": "f7d9bc6ca65cf7c23d28ec4ce2dee054c091a9d88973da7a181429db84873c60",
+    "tools/verify_build.py": "3ba63ea55f18f9a2ff5fd2f82967a851f18bd4b81836625fab5a5eea60ad9991"
+  },
+  "git_revision": "40ead657caf78a7d360de97d911feec79cc53c57",
+  "git_status": "",
+  "invocation": [
+    "tools/run_benchmarks.py",
+    "--build-dir",
+    "build/audit-clang-release",
+    "--output",
+    "results/audit-native-clang23",
+    "--repeats",
+    "3"
+  ],
+  "seed": 305419896,
+  "sizes": [
+    10000,
+    100000,
+    1000000
+  ],
+  "workloads": [
+    "noncrossing",
+    "immediate",
+    "cancellation_bursts",
+    "shared_level",
+    "large_book",
+    "asymmetric"
+  ],
+  "modes": [
+    "baseline",
+    "pool"
+  ],
+  "repeats": 3,
+  "warmups": 1,
+  "mode_order": "alternated by workload/size; each mode uses a separate process",
+  "timing_scope": "engine add/cancel plus returned event destruction; no parsing, IO, engine construction/destruction, invariant checks, or workload generation",
+  "allocation_scope": "separate untimed pass counting book PMR upstream requests with sizes/alignments; excludes ordinary event vectors, pool object, and process RSS",
+  "path_policy": "absolute repository/build/toolchain/home prefixes are replaced by placeholders; other absolute path tokens retain only basename"
+}

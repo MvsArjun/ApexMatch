@@ -70,6 +70,42 @@ Accepted IDs are never reused, so `seen_` grows with historical accepted adds ev
 
 Allocator reliability also depends on the standard-library runtime. Final native GCC 16.2 Debug/Release testing found a pool-resource segmentation fault during injected upstream allocation failure, reproduced by a standalone standard-library-only program. The mandatory test remains enabled; those full GCC runs failed. Normal-allocation timing observations below use native Clang/libc++, and do not establish pool behavior during exhaustion or validate another runtime. See [core-audit.md](core-audit.md) for the reproducer and [verification.md](verification.md) for build outcomes.
 
+## Audited observations: native Clang 23 on Windows
+
+The final audited matrix completed on 18 October 2026 with **108 observations**: six workloads, 10,000/100,000/1,000,000 requests, both allocation modes, and three repeats. Each configuration used one full-size warm-up and seed `305419896`. The source tree was clean at recorded revision `40ead657caf78a7d360de97d911feec79cc53c57` when metadata was collected. The runner recorded executable/source SHA-256 digests and inspected the optimized Release compile command.
+
+The host was an AMD Ryzen 5 6600H, 12 logical CPUs, 16,312,721,408 bytes of physical RAM, Windows 11 build 26300, and Clang 23.1.3 targeting `x86_64-w64-windows-gnu` with libc++. Compilation used C++20, `-O3 -DNDEBUG`, and no sanitizer instrumentation. No CPU affinity/isolation or fixed-frequency guarantee was applied. See the [portable metadata](../results/audit-native-clang23/metadata.json), [full report](../results/audit-native-clang23/summary.md), [raw observations](../results/audit-native-clang23/raw.csv), and [summary CSV](../results/audit-native-clang23/summary.csv).
+
+At one million incoming requests, the median observations were:
+
+| Workload | Throughput, baseline → pool (million requests/s) | p99, baseline → pool (ns) | Peak book requested memory, baseline → pool (MiB) | Upstream allocations, baseline → pool |
+|---|---:|---:|---:|---:|
+| Noncrossing | 1.833 → 3.074 | 800 → 700 | 147.34 → 199.41 | 3,002,040 → 129 |
+| Immediate execution | 4.661 → 6.572 | 300 → 300 | 37.68 → 56.14 | 2,500,021 → 62 |
+| Cancellation bursts | 4.018 → 5.343 | 500 → 300 | 18.86 → 32.57 | 1,969,455 → 75 |
+| Shared level | 2.769 → 5.918 | 500 → 200 | 147.19 → 199.16 | 3,000,041 → 114 |
+| Large book | 0.395 → 0.499 | 4,000 → 3,400 | 223.48 → 332.75 | 4,000,040 → 157 |
+| Asymmetric | 1.617 → 2.777 | 1,300 → 800 | 121.06 → 166.91 | 2,886,545 → 124 |
+
+The pool/baseline ratio of median batch throughput was:
+
+| Workload | 10,000 requests | 100,000 requests | 1,000,000 requests |
+|---|---:|---:|---:|
+| Noncrossing | 1.204× | 1.531× | 1.677× |
+| Immediate execution | 1.175× | 1.384× | 1.410× |
+| Cancellation bursts | 1.212× | 1.307× | 1.330× |
+| Shared level | 1.232× | 1.610× | 2.137× |
+| Large book | 1.028× | 1.223× | 1.265× |
+| Asymmetric | 1.177× | 1.494× | 1.717× |
+
+The pool had a higher median throughput in all 18 workload/size conditions and higher peak requested memory in all 18. Median repeat p99 was lower in 16 conditions and equal in two: 10,000 asymmetric and one-million immediate. These are observed comparisons of the two allocation modes, not a significance claim. The 10,000 large-book throughput difference was only 2.8%, with overlapping repeat ranges; it is especially weak evidence of a durable advantage.
+
+No new matching optimization was introduced in this audit. The new pool/baseline comparison re-evaluates the existing allocator choice after correctness and tooling changes. Allocation counts, peak/retained requested bytes, and active-order counts matched the historical matrix exactly in all 36 workload/size/mode configurations. At one-million noncrossing requests, the pool increased peak requested memory by about 52.07 MiB (35.3%) for the observed 1.677× median throughput. Throughput excludes engine construction/destruction time. Requested book memory includes resource setup but excludes process RSS and ordinary event-vector allocation. The baseline remains the default.
+
+Run-to-run variation prevents attributing differences from the original revision to an audit fix. For example, one-million noncrossing baseline throughput ranged from 1.676 to 2.279 million requests/s across repeats and pool throughput from 2.459 to 4.118 million. Asymmetric baseline ranged from 1.471 to 2.234 million and pool from 2.664 to 3.503 million. The new asymmetric pool median was 2.777 million versus the historical 3.497 million, while their repeat ranges overlapped. These measurements neither isolate an optimization nor establish a causal regression. New one-million large-book medians were 0.395/0.499 million versus historical 0.422/0.539 million; its new baseline/pool p99 was 4,000/3,400 ns versus historical 3,200/3,200 ns. Current results take precedence over the older headline figures.
+
+Every process again recorded a **0 ns** median back-to-back timer pair, and latency percentiles remained quantized at 100 ns on this host. No clock-cost correction, CPU sampling, cache-miss attribution, Linux result, or production latency guarantee is inferred from this run. All observations passed the runner's configuration/count/arithmetic checks and each timed engine pass's invariant checks; matching correctness and allocator-failure coverage remain separately documented in [testing.md](testing.md) and [verification.md](verification.md).
+
 ## Historical observations: native Clang 23 on Windows
 
 The original matrix ran successfully on 18 October 2026: 6 workloads × 3 sizes × 2 modes × 3 repeats = **108 recorded observations**, with one full-size warm-up per mode/configuration. The host was an AMD Ryzen 5 6600H, 12 logical CPUs, 16,312,721,408 bytes of physical RAM (about 15.19 GiB), Windows 11 build 26300, and Clang 23.1.3 targeting `x86_64-w64-windows-gnu`. The release compile used C++20, `-O3 -DNDEBUG`, with sanitizers off. Recorded source revision: `21000218f16078c20f5b3271393035033436fa34`. Flags, seed, invocation, and CPU details are in [metadata.json](../results/native-clang23/metadata.json). These are historical observations of that revision, rather than a promise about the audited revision.

@@ -49,5 +49,12 @@
     }
   ],
   "result": "failed: test",
-  "finished_utc": "2026-10-18T16:36:16.460811+00:00"
+  "finished_utc": "2026-10-18T16:36:16.460811+00:00",
+  "ctest": {
+    "tests": 6,
+    "failures": 1,
+    "disabled": 0
+  },
+  "named_cpp_cases": null,
+  "python_unittest_cases": 13
 }

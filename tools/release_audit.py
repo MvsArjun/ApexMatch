@@ -14,6 +14,7 @@ SECRET_PATTERNS = {
     "aws_access_key": re.compile(rb"(?:AKIA|ASIA)[A-Z0-9]{16}"),
     "openai_key": re.compile(rb"sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{32,}"),
     "credential_in_url": re.compile(rb"https?://[^\s/:@]+:[^\s/@]+@"),
+    "literal_credential_assignment": re.compile(rb"(?i)\b(?:password|passwd|api[_-]?key|access[_-]?token|client[_-]?secret)[\"']?\s*[:=]\s*[\"'][^\"'\r\n]{4,}[\"']"),
 }
 LOCAL_PATH = re.compile(rb"(?:[A-Za-z]:[\\/]Users[\\/][^\s\\/\"']+|/(?:Users|home)/[^\s/\"']+)")
 BUILD_SUFFIXES = {".exe", ".dll", ".obj", ".o", ".a", ".lib", ".pdb", ".etl", ".zip"}
@@ -69,6 +70,10 @@ def scan(root: Path, include_history: bool) -> dict:
             categories.append("large_file_over_1_MiB")
         if path.suffix.lower() in BUILD_SUFFIXES:
             categories.append("build_or_archive_artifact")
+        if (path.name in {".env", ".npmrc", ".pypirc", "id_rsa", "id_ed25519", "credentials.json"}
+                or (path.name.startswith(".env.") and path.name != ".env.example")
+                or path.suffix.lower() in {".pem", ".key", ".p12", ".pfx"}):
+            categories.append("sensitive_filename")
         if categories:
             current.append({"path": relative, "categories": categories})
     historical = []

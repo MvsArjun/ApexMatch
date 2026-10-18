@@ -1,0 +1,9 @@
+{
+  "actionlint_version": "1.7.12",
+  "actionlint_exit_code": 0,
+  "shellcheck": "not installed; disabled for actionlint",
+  "empty_ctest_discovery_exit_code": 8,
+  "release_tooling_cases": 5,
+  "release_tooling_result": "passed",
+  "hosted_ci_executed": false
+}

@@ -56,6 +56,33 @@ submitted_quantity = 2 * traded_quantity + cancelled_quantity + resting_quantity
 The maximum accepted lifetime quantity is `UINT64_MAX`; boundary tests exercise
 large same-level sums and large executions without signed arithmetic overflow.
 
+## Engineering-audit additions and actual status
+
+The current suite defines 25 core named cases plus four extension groups:
+29 named C++ cases in a complete run. Three added core cases cover unknown
+typed enum/null-resource arguments, the actual internal sequence preflight at
+maximum boundaries, and allocation-failure destruction at 64 successive
+upstream allowances per allocation mode. No production counter setter was added.
+The oracle now checks exact rejection reasons rather than just nonempty text.
+
+Queue coverage now includes two producers and two consumers; pipeline input
+errors drain and propagate. Real-socket client regressions accept the exact
+1 MiB response boundary and reject the next byte even with newline framing.
+The client rejects command byte 4097 before waiting for newline or EOF. TWAP
+adds zero-duration stable ties and maximum quantity/time/ID boundary cases.
+
+CTest also runs eight benchmark-tooling and five release-tooling unit cases.
+These validate build provenance, evidence preservation, observation arithmetic,
+portable metadata, credential/path/artifact reporting and read-only history scans.
+The six CTest groups include the replay, TCP and pipeline/TWAP program checks.
+
+Native Clang Debug, Release and combined ASan/UBSan each passed all six groups,
+29 named C++ cases and 13 Python tooling cases. Native GCC 16.2 built but failed
+one of six groups in the new pool allocation-failure case. An engine-free
+[standard-library reproducer](toolchain-issue.md) exhibits the same crash. The
+regression remains mandatory; five other passing GCC groups do not constitute
+a complete GCC pass. See [verification.md](verification.md) for logs and counts.
+
 ## End-to-end replay
 
 `tests/replay_test.py` launches the actual simulator, verifies that every output
@@ -89,13 +116,11 @@ the queue/pipeline ownership boundary and networking tests as well as running
 the rest of the suite. A sanitizer build passing is evidence for exercised
 paths, not a proof that every possible execution is safe.
 
-At the start of this delivery session, the host was Windows without a configured
-Linux/WSL2 environment. The subsequently configured native Clang 23 runtime
-supports ASan/UBSan, and a smoke check confirmed that these sanitizers can run on
-this host. The final combined sanitizer suite is recorded separately in the
-delivery verification report. Linux/WSL2 checks, TSan, and Linux `perf` still
-require the supported Linux environment or the included CI workflow. The commands
-above are reproduction instructions, not claims that a particular check ran.
+The host is Windows without Linux/WSL2. Native Clang ASan/UBSan passed the full
+audit suite with `detect_leaks=0`; its runtime does not support leak detection.
+Use `ctest --preset asan-windows` for that native variant. Linux/WSL2, TSan,
+LeakSanitizer and hosted CI remain unverified. Linux reproduction commands and
+the workflow are configuration, not evidence that those checks ran.
 
 On 2026-10-18, a native Windows Clang 23 C++20 release compilation of the core
 suite passed all 22 named core cases, including all 40,000 differential

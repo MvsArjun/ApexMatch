@@ -228,20 +228,22 @@ JSON, I/O, engine construction/destruction and invariants. Results include mean,
 p50/p95/p99, timer-pair overhead, upstream allocation counts, and approximate
 book memory; requested bytes are not process RSS.
 
-The historical [machine-readable measurements](results/native-clang23/results.json)
-and [full comparison table](results/native-clang23/summary.md) record the initial
-machine, compiler, flags, seed and repeat spread. Read
+The audited [machine-readable measurements](results/audit-native-clang23/results.json)
+and [full comparison table](results/audit-native-clang23/summary.md) record the
+machine, compiler, flags, seed and repeat spread. The initial run remains in
+[historical results](results/native-clang23/README.md). Read
 [the measured experiment](docs/performance.md) before interpreting the pool as
 an improvement. The ordinary-allocation baseline remains the default.
 
-On the initial Ryzen 5 6600H / Windows 11 / Clang 23 release run, the million-request
-noncrossing workload measured **1.84 million requests/s baseline versus 3.06
-million with pooling**. Its p99 was 900 ns versus 600 ns. Book upstream
+On the audited Ryzen 5 6600H / Windows 11 / Clang 23 release run, the million-request
+noncrossing workload measured **1.83 million requests/s baseline versus 3.07
+million with pooling**. Its p99 was 800 ns versus 700 ns. Book upstream
 allocations fell from 3,002,040 to 129, while peak requested book memory grew
-from 147.34 to 199.41 MiB. Pooling improved observed throughput across this
-matrix, but small-book memory overhead was substantial and the 10,000-request
-large-book p99 increased from 800 to 900 ns. Timers quantize many samples to
-100 ns; these are local observations, not exchange latency guarantees.
+from 147.34 to 199.41 MiB. Pooling had higher median throughput and memory in
+all 18 pairs; p99 improved in 16 pairs and was unchanged in two. The original
+run included a p99 regression and is preserved. Differences between the two
+runs are not evidence that an audit change caused a speedup. Timers quantize
+many samples to 100 ns; these are local observations, not exchange guarantees.
 
 ## Scope and limitations
 
